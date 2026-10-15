@@ -23,6 +23,10 @@ public final class EventManager {
     public enum Result { OK, ALREADY_RUNNING, NOT_ACTIVE, NOT_RUNNING, NOT_PAUSED, NO_COLONIES }
 
     public static Result start(MinecraftServer server, PenaltyMode penalty) {
+        return start(server, penalty, CgConfig.EVENT_LIVES.get());
+    }
+
+    public static Result start(MinecraftServer server, PenaltyMode penalty, int lives) {
         EventState state = EventState.get(server);
         if (state.phase().isActive()) {
             return Result.ALREADY_RUNNING;
@@ -31,7 +35,7 @@ public final class EventManager {
         if (colonies.isEmpty()) {
             return Result.NO_COLONIES;
         }
-        state.begin(penalty, System.currentTimeMillis());
+        state.begin(penalty, lives, System.currentTimeMillis());
         List<ServerPlayer> joining = new ArrayList<>();
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             if (isEligible(p)) {
@@ -40,8 +44,8 @@ public final class EventManager {
             }
         }
         spread(server, state, new ArrayList<>(colonies.all()), joining);
-        CullingGames.LOGGER.info("Culling Games #{} started ({} participants, penalty {})",
-                state.eventNumber(), state.participants().size(), penalty);
+        CullingGames.LOGGER.info("Culling Games #{} started ({} participants, penalty {}, {} lives)",
+                state.eventNumber(), state.participants().size(), penalty, lives);
         Kogane.broadcast(server, "The Culling Games have begun. Participants: " + state.participants().size() + ".");
         return Result.OK;
     }
@@ -52,6 +56,7 @@ public final class EventManager {
             return Result.NOT_ACTIVE;
         }
         int number = state.eventNumber();
+        Penalties.onEventEnd(server, state);
         state.end();
         CullingGames.LOGGER.info("Culling Games #{} stopped", number);
         Kogane.broadcast(server, "The Culling Games are over.");

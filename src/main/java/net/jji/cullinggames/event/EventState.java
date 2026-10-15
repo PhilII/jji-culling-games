@@ -3,6 +3,7 @@ package net.jji.cullinggames.event;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,19 @@ public final class EventState extends SavedData {
     private final Map<UUID, Long> lastPointChange = new HashMap<>();
     /** Kill log, oldest first. Kept after the event stops until the next start. */
     private final List<KillRecord> kills = new ArrayList<>();
+    /** Lives each participant starts with in this event. */
+    private int startingLives = 3;
+    private final Map<UUID, Integer> lives = new HashMap<>();
+    private final Set<UUID> eliminated = new HashSet<>();
+    /** Sealed participant -> cursed energy at the moment of sealing (restored on unseal). */
+    private final Map<UUID, Double> sealed = new HashMap<>();
+    /** Game mode an eliminated participant had before being made a spectator. */
+    private final Map<UUID, String> gameModeBefore = new HashMap<>();
+    /**
+     * Restores owed to players who were offline when the event ended or when they were unsealed.
+     * Survives the next event start; an entry is removed once applied at login.
+     */
+    private final Map<UUID, CompoundTag> restoreOnLogin = new HashMap<>();
 
     public static EventState get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(EventState::load, EventState::new, DATA_NAME);
@@ -68,6 +82,38 @@ public final class EventState extends SavedData {
             UUID id = parseUuid(key);
             if (id != null) {
                 s.lastPointChange.put(id, last.getLong(key));
+            }
+        }
+        s.startingLives = tag.contains("startingLives") ? tag.getInt("startingLives") : 3;
+        CompoundTag livesTag = tag.getCompound("lives");
+        for (String key : livesTag.getAllKeys()) {
+            UUID id = parseUuid(key);
+            if (id != null) {
+                s.lives.put(id, livesTag.getInt(key));
+            }
+        }
+        for (Tag t : tag.getList("eliminated", Tag.TAG_INT_ARRAY)) {
+            s.eliminated.add(NbtUtils.loadUUID(t));
+        }
+        CompoundTag sealedTag = tag.getCompound("sealed");
+        for (String key : sealedTag.getAllKeys()) {
+            UUID id = parseUuid(key);
+            if (id != null) {
+                s.sealed.put(id, sealedTag.getDouble(key));
+            }
+        }
+        CompoundTag modes = tag.getCompound("gameModeBefore");
+        for (String key : modes.getAllKeys()) {
+            UUID id = parseUuid(key);
+            if (id != null) {
+                s.gameModeBefore.put(id, modes.getString(key));
+            }
+        }
+        CompoundTag restores = tag.getCompound("restoreOnLogin");
+        for (String key : restores.getAllKeys()) {
+            UUID id = parseUuid(key);
+            if (id != null) {
+                s.restoreOnLogin.put(id, restores.getCompound(key));
             }
         }
         for (Tag t : tag.getList("kills", Tag.TAG_COMPOUND)) {
@@ -113,6 +159,24 @@ public final class EventState extends SavedData {
             killList.add(k.save());
         }
         tag.put("kills", killList);
+        tag.putInt("startingLives", startingLives);
+        CompoundTag livesTag = new CompoundTag();
+        lives.forEach((id, v) -> livesTag.putInt(id.toString(), v));
+        tag.put("lives", livesTag);
+        ListTag elim = new ListTag();
+        for (UUID id : eliminated) {
+            elim.add(NbtUtils.createUUID(id));
+        }
+        tag.put("eliminated", elim);
+        CompoundTag sealedTag = new CompoundTag();
+        sealed.forEach((id, v) -> sealedTag.putDouble(id.toString(), v));
+        tag.put("sealed", sealedTag);
+        CompoundTag modes = new CompoundTag();
+        gameModeBefore.forEach((id, v) -> modes.putString(id.toString(), v));
+        tag.put("gameModeBefore", modes);
+        CompoundTag restores = new CompoundTag();
+        restoreOnLogin.forEach((id, v) -> restores.put(id.toString(), v.copy()));
+        tag.put("restoreOnLogin", restores);
         return tag;
     }
 
@@ -126,7 +190,8 @@ public final class EventState extends SavedData {
 
     // --- transitions (EventManager is the only caller) ---
 
-    void begin(PenaltyMode penalty, long nowMillis) {
+    void begin(PenaltyMode penalty, int startingLives, long nowMillis) {
+        this.startingLives = startingLives;
         this.phase = EventPhase.RUNNING;
         this.penalty = penalty;
         this.startedAtMillis = nowMillis;
@@ -137,6 +202,10 @@ public final class EventState extends SavedData {
         this.points.clear();
         this.lastPointChange.clear();
         this.kills.clear();
+        this.lives.clear();
+        this.eliminated.clear();
+        this.sealed.clear();
+        this.gameModeBefore.clear();
         setDirty();
     }
 
@@ -145,10 +214,14 @@ public final class EventState extends SavedData {
         setDirty();
     }
 
+    /** Penalties.onEventEnd must run first: it restores sealed and eliminated players. */
     void end() {
         this.phase = EventPhase.IDLE;
         this.participants.clear();
         this.colonyOf.clear();
+        this.sealed.clear();
+        this.eliminated.clear();
+        this.gameModeBefore.clear();
         setDirty();
     }
 
@@ -164,6 +237,7 @@ public final class EventState extends SavedData {
         if (added) {
             points.putIfAbsent(id, 0);
             lastPointChange.put(id, runningTicks);
+            lives.putIfAbsent(id, startingLives);
             setDirty();
         }
         return added;
@@ -195,12 +269,94 @@ public final class EventState extends SavedData {
         return true;
     }
 
+    /** Restarts the player's timer without a point change (after a life-loss penalty). */
+    void resetTimer(UUID id) {
+        lastPointChange.put(id, runningTicks);
+        setDirty();
+    }
+
+    /** Takes one life. Returns lives left; at 0 the player is marked eliminated. */
+    int loseLife(UUID id) {
+        int left = Math.max(0, lives.getOrDefault(id, startingLives) - 1);
+        lives.put(id, left);
+        if (left == 0) {
+            eliminated.add(id);
+        }
+        setDirty();
+        return left;
+    }
+
+    void markSealed(UUID id, double cursedEnergy) {
+        sealed.put(id, cursedEnergy);
+        setDirty();
+    }
+
+    /** Returns the saved cursed energy, or null if the player was not sealed. */
+    Double clearSealed(UUID id) {
+        Double ce = sealed.remove(id);
+        if (ce != null) {
+            setDirty();
+        }
+        return ce;
+    }
+
+    void rememberGameMode(UUID id, String mode) {
+        gameModeBefore.putIfAbsent(id, mode);
+        setDirty();
+    }
+
+    String takeGameMode(UUID id) {
+        String mode = gameModeBefore.remove(id);
+        if (mode != null) {
+            setDirty();
+        }
+        return mode;
+    }
+
+    void addRestore(UUID id, CompoundTag restore) {
+        CompoundTag merged = restoreOnLogin.computeIfAbsent(id, k -> new CompoundTag());
+        merged.merge(restore);
+        setDirty();
+    }
+
+    CompoundTag takeRestore(UUID id) {
+        CompoundTag tag = restoreOnLogin.remove(id);
+        if (tag != null) {
+            setDirty();
+        }
+        return tag;
+    }
+
     void recordKill(KillRecord kill) {
         kills.add(kill);
         setDirty();
     }
 
     // --- reads ---
+
+    public int startingLives() {
+        return startingLives;
+    }
+
+    public int lives(UUID id) {
+        return lives.getOrDefault(id, startingLives);
+    }
+
+    public boolean isEliminated(UUID id) {
+        return eliminated.contains(id);
+    }
+
+    public boolean isSealed(UUID id) {
+        return sealed.containsKey(id);
+    }
+
+    public Set<UUID> sealedPlayers() {
+        return Collections.unmodifiableSet(sealed.keySet());
+    }
+
+    public Set<UUID> eliminatedPlayers() {
+        return Collections.unmodifiableSet(eliminated);
+    }
 
     public int points(UUID id) {
         return points.getOrDefault(id, 0);

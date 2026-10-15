@@ -5,6 +5,7 @@ import net.jji.cullinggames.colony.Barrier;
 import net.jji.cullinggames.command.CgCommands;
 import net.jji.cullinggames.config.CgConfig;
 import net.jji.cullinggames.event.EventManager;
+import net.jji.cullinggames.event.Penalties;
 import net.jji.cullinggames.event.Points;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
@@ -23,5 +24,6 @@ public final class CullingGames {
         MinecraftForge.EVENT_BUS.register(CgCommands.class);
         MinecraftForge.EVENT_BUS.register(Barrier.class);
         MinecraftForge.EVENT_BUS.register(Points.class);
+        MinecraftForge.EVENT_BUS.register(Penalties.class);
     }
 }

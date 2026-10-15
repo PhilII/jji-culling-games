@@ -15,8 +15,8 @@ This file is the source of truth for the build. Every session starts by reading 
 | 1 | Event skeleton | done | `step1/event-core` | `v0.1-event-core` |
 | 2 | Colonies + barrier | done | `step2/colonies` | `v0.2-colonies` |
 | 3 | Points + kill log | done | `step3/points` | `v0.3-points` |
-| 4 | Timer + penalty + event lives | next | `step4/penalty` | `v0.4-penalty` |
-| 5 | Kogane + shop | not started | `step5/kogane-shop` | `v0.5-kogane-shop` |
+| 4 | Timer + penalty + event lives | done | `step4/penalty` | `v0.4-penalty` |
+| 5 | Kogane + shop | next | `step5/kogane-shop` | `v0.5-kogane-shop` |
 | 6 | Client HUD + screens | not started | `step6/client` | `v0.6-client` |
 | 7 | Polish + release | not started | `step7/release` | `v1.0.0` |
 
@@ -28,6 +28,7 @@ This file is the source of truth for the build. Every session starts by reading 
 - **Lives**: event deaths do not cost real server lives. Admins set event lives.
 - **Kogane shop**: admins stock it. Points convert to Lightman's money, never the other way.
 - **Art**: placeholders first (Kogane, HUD, sounds).
+- **How the CT seal works** (tested 16 Oct): the seal drains cursed energy to 0 every tick and gives the saved amount back on unseal. Jujutsu Craft's CT fields are never written. Reason: JJC treats CT 0 as "re-roll a random CT on respawn" and CT -1 as "non-sorcerer" (and can grant advancements on respawn), and Alm ownership / ReBalanced key off the CT, so changing it risks losing unique CTs.
 - **Integration**: Jujutsu Craft, ReBalanced and Lightman's Currency are soft dependencies, read at runtime. We never copy their code (all are "All Rights Reserved").
 
 ## The seven steps
@@ -116,6 +117,11 @@ Goal: a jar the server can run in a real event.
 - JDK 17 (Homebrew): `export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
 - `./gradlew build` → `build/libs/cullinggames-<version>.jar`
 - If a build hangs on downloads, add `-Dorg.gradle.internal.http.connectionTimeout=60000 -Dorg.gradle.internal.http.socketTimeout=120000`.
+
+## Testing with Jujutsu Craft
+- Copy the server's jars into `libs/` (git-ignored): `JujutsuCraft-ver51-forge-1.20.1.jar`, `geckolib-forge-1.20.1-4.7.2.jar`, `player-animation-lib-forge-1.0.2-rc1+1.20.jar` from `../server-copy/mods/`.
+- `build.gradle` deobfuscates every jar in `libs/` onto the dev runtime only. The mod never compiles against them.
+- Without `libs/`, the build and tests still run; JJC-specific checks are skipped.
 
 ## Local test server
 - `run/` is git-ignored. EULA accepted by PhilL for local testing (16 Oct). RCON on 127.0.0.1:25575, password in `run/server.properties`.
