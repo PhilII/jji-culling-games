@@ -1,6 +1,7 @@
 package net.jji.cullinggames;
 
 import com.mojang.logging.LogUtils;
+import net.jji.cullinggames.colony.Barrier;
 import net.jji.cullinggames.command.CgCommands;
 import net.jji.cullinggames.config.CgConfig;
 import net.jji.cullinggames.event.EventManager;
@@ -19,5 +20,6 @@ public final class CullingGames {
         context.registerConfig(ModConfig.Type.SERVER, CgConfig.SPEC);
         MinecraftForge.EVENT_BUS.register(EventManager.class);
         MinecraftForge.EVENT_BUS.register(CgCommands.class);
+        MinecraftForge.EVENT_BUS.register(Barrier.class);
     }
 }
