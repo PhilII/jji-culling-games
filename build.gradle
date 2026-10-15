@@ -62,6 +62,10 @@ minecraft {
         configureEach {
             workingDirectory project.file('run')
 
+            // Lets mixin-based mods from ./libs (e.g. Lightman's Currency) find their targets in the dev mappings.
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+
             // Recommended logging data for a userdev environment
             // The markers can be added/remove as needed separated by commas.
             // "SCAN": For mods scan.

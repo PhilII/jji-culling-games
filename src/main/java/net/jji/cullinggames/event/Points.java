@@ -49,6 +49,9 @@ public final class Points {
             return;
         }
         int award = pointsFor(state, victim);
+        if (state.hasRule(EventRule.DOUBLE_POINTS.id())) {
+            award *= 2;
+        }
         if (award <= 0) {
             return;
         }

@@ -1,38 +1,47 @@
 package net.jji.cullinggames.command;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import java.time.Duration;
-import com.mojang.authlib.GameProfile;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Stream;
 import net.jji.cullinggames.colony.Colony;
 import net.jji.cullinggames.colony.ColonyService;
 import net.jji.cullinggames.colony.ColonyStore;
 import net.jji.cullinggames.config.CgConfig;
 import net.jji.cullinggames.event.EventManager;
+import net.jji.cullinggames.event.EventRule;
 import net.jji.cullinggames.event.EventState;
 import net.jji.cullinggames.event.KillRecord;
 import net.jji.cullinggames.event.Kogane;
-import net.jji.cullinggames.event.Points;
 import net.jji.cullinggames.event.PenaltyMode;
+import net.jji.cullinggames.event.Points;
+import net.jji.cullinggames.event.Shop;
+import net.jji.cullinggames.shop.ShopStore;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.GameProfileArgument;
 import net.minecraft.commands.arguments.coordinates.ColumnPosArgument;
-import net.minecraft.server.level.ColumnPos;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ColumnPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -55,7 +64,10 @@ public final class CgCommands {
                                 .executes(c -> start(c, parsePenalty(c), CgConfig.EVENT_LIVES.get()))
                                 .then(Commands.argument("lives", IntegerArgumentType.integer(1, 100))
                                         .executes(c -> start(c, parsePenalty(c), IntegerArgumentType.getInteger(c, "lives"))))))
-                .then(admin("stop").executes(c -> report(c, EventManager.stop(server(c)), "Event stopped.")))
+                .then(admin("stop").executes(c -> report(c, EventManager.stop(server(c)), "Event stopped."))
+                        .then(Commands.argument("minutes", IntegerArgumentType.integer(1, 24 * 60))
+                                .executes(c -> report(c, EventManager.stopIn(server(c), IntegerArgumentType.getInteger(c, "minutes")),
+                                        "Event will end in " + IntegerArgumentType.getInteger(c, "minutes") + " minutes."))))
                 .then(admin("pause").executes(c -> report(c, EventManager.pause(server(c)), "Event paused.")))
                 .then(admin("resume").executes(c -> report(c, EventManager.resume(server(c)), "Event resumed.")))
                 .then(admin("status").executes(CgCommands::status))
@@ -66,10 +78,25 @@ public final class CgCommands {
                         .then(Commands.literal("remove").then(Commands.argument("player", EntityArgument.player())
                                 .executes(c -> participant(c, false)))))
                 .then(pointsCommands())
-                .then(admin("killlog")
+                .then(Commands.literal("killlog")
                         .executes(c -> killLog(c, 10))
                         .then(Commands.argument("count", IntegerArgumentType.integer(1, 100))
-                                .executes(c -> killLog(c, IntegerArgumentType.getInteger(c, "count"))))));
+                                .executes(c -> killLog(c, IntegerArgumentType.getInteger(c, "count")))))
+                .then(shopCommands())
+                .then(Commands.literal("buy").then(Commands.argument("what", StringArgumentType.word())
+                        .suggests((c, b) -> SharedSuggestionProvider.suggest(buyIds(c.getSource().getServer()), b))
+                        .executes(CgCommands::buy)))
+                .then(Commands.literal("rules").executes(CgCommands::listRules))
+                .then(Commands.literal("addrule").then(Commands.argument("rule", StringArgumentType.word())
+                        .suggests((c, b) -> SharedSuggestionProvider.suggest(Arrays.stream(EventRule.values()).map(EventRule::id), b))
+                        .executes(CgCommands::addRule)))
+                .then(Commands.literal("transfer").then(Commands.argument("player", EntityArgument.player())
+                        .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
+                                .executes(CgCommands::transfer))))
+                .then(Commands.literal("leaderboard").executes(CgCommands::leaderboard))
+                .then(Commands.literal("cashout").then(Commands.argument("points", IntegerArgumentType.integer(1, 1_000_000))
+                        .executes(c -> shopResult(c, Shop.cashOut(server(c), c.getSource().getPlayerOrException(),
+                                IntegerArgumentType.getInteger(c, "points")))))));
     }
 
     /** Admin-only literal (permission level 2). */
@@ -125,6 +152,13 @@ public final class CgCommands {
               .append(" | sealed ").append(s.sealedPlayers().size())
               .append(" | out ").append(s.eliminatedPlayers().size())
               .append(" | running time ").append(String.format("%d:%02d:%02d", t.toHours(), t.toMinutesPart(), t.toSecondsPart()));
+            if (s.endAtTicks() >= 0) {
+                long left = Math.max(0, s.endAtTicks() - s.runningTicks()) / 20;
+                sb.append(" | ends in ").append(String.format("%d:%02d", left / 60, left % 60));
+            }
+            if (!s.rules().isEmpty()) {
+                sb.append(" | rules ").append(String.join(", ", s.rules()));
+            }
         }
         String text = sb.toString();
         c.getSource().sendSuccess(() -> Component.literal(text), false);
@@ -287,8 +321,18 @@ public final class CgCommands {
         return total;
     }
 
-    private static int killLog(CommandContext<CommandSourceStack> c, int count) {
-        List<KillRecord> kills = EventState.get(server(c)).kills();
+    /** Admins always; players only after buying killlog this event. */
+    private static int killLog(CommandContext<CommandSourceStack> c, int count) throws CommandSyntaxException {
+        EventState state = EventState.get(server(c));
+        if (!c.getSource().hasPermission(2)) {
+            ServerPlayer player = c.getSource().getPlayerOrException();
+            if (!Shop.hasAccess(state, player.getUUID(), Shop.Service.KILLLOG)) {
+                c.getSource().sendFailure(Component.literal("Buy the kill log first: /cg buy killlog ("
+                        + Shop.Service.KILLLOG.price() + " points)."));
+                return 0;
+            }
+        }
+        List<KillRecord> kills = state.kills();
         if (kills.isEmpty()) {
             c.getSource().sendSuccess(() -> Component.literal("No kills logged."), false);
             return 0;
@@ -304,5 +348,138 @@ public final class CgCommands {
         String text = sb.toString();
         c.getSource().sendSuccess(() -> Component.literal(text), false);
         return kills.size();
+    }
+
+    // --- shop, rules, transfers ---
+
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> shopCommands() {
+        return Commands.literal("shop")
+                .executes(CgCommands::showShop)
+                .then(admin("add").then(Commands.argument("price", IntegerArgumentType.integer(0, 1_000_000))
+                        .executes(CgCommands::shopAdd)))
+                .then(admin("remove").then(Commands.argument("id", IntegerArgumentType.integer(1))
+                        .executes(CgCommands::shopRemove)));
+    }
+
+    private static Stream<String> buyIds(MinecraftServer server) {
+        int items = ShopStore.get(server).all().size();
+        return Stream.concat(Arrays.stream(Shop.Service.values()).map(Shop.Service::id),
+                java.util.stream.IntStream.rangeClosed(1, items).mapToObj(Integer::toString));
+    }
+
+    private static MutableComponent buyLine(String label, int price, String buyId) {
+        return Component.literal("\n [" + price + " pts] " + label)
+                .withStyle(s -> s.withColor(ChatFormatting.AQUA)
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/cg buy " + buyId))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to buy"))));
+    }
+
+    private static int showShop(CommandContext<CommandSourceStack> c) {
+        MinecraftServer server = server(c);
+        MutableComponent msg = Kogane.line("Shop. Click to buy.").copy();
+        msg.append(buyLine("Leaderboard (rest of event)", Shop.Service.LEADERBOARD.price(), "leaderboard"));
+        msg.append(buyLine("Point transfers (rest of event)", Shop.Service.TRANSFER.price(), "transfer"));
+        msg.append(buyLine("Kill log (rest of event)", Shop.Service.KILLLOG.price(), "killlog"));
+        List<ShopStore.Entry> items = ShopStore.get(server).all();
+        for (int i = 0; i < items.size(); i++) {
+            ItemStack s = items.get(i).stack();
+            msg.append(buyLine("#" + (i + 1) + " " + s.getCount() + "x " + s.getHoverName().getString(), items.get(i).price(), Integer.toString(i + 1)));
+        }
+        msg.append(Component.literal("\n Add a rule: /cg rules (" + CgConfig.RULE_COST.get() + " pts). Cash out: /cg cashout <points>.")
+                .withStyle(ChatFormatting.GRAY));
+        c.getSource().sendSuccess(() -> msg, false);
+        return 1;
+    }
+
+    private static int shopAdd(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        ServerPlayer player = c.getSource().getPlayerOrException();
+        ItemStack held = player.getMainHandItem();
+        if (held.isEmpty()) {
+            c.getSource().sendFailure(Component.literal("Hold the item (and stack size) you want to sell."));
+            return 0;
+        }
+        int price = IntegerArgumentType.getInteger(c, "price");
+        int id = ShopStore.get(server(c)).add(held, price);
+        String name = held.getCount() + "x " + held.getHoverName().getString();
+        c.getSource().sendSuccess(() -> Component.literal("Added shop item #" + id + ": " + name + " for " + price + " points."), true);
+        return id;
+    }
+
+    private static int shopRemove(CommandContext<CommandSourceStack> c) {
+        int id = IntegerArgumentType.getInteger(c, "id");
+        if (!ShopStore.get(server(c)).remove(id)) {
+            c.getSource().sendFailure(Component.literal("No shop item #" + id + "."));
+            return 0;
+        }
+        c.getSource().sendSuccess(() -> Component.literal("Removed shop item #" + id + ". Later items moved up one number."), true);
+        return 1;
+    }
+
+    private static int buy(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        ServerPlayer player = c.getSource().getPlayerOrException();
+        String what = StringArgumentType.getString(c, "what");
+        Shop.Service service = Shop.Service.byId(what);
+        if (service != null) {
+            return shopResult(c, Shop.buyService(server(c), player, service));
+        }
+        try {
+            return shopResult(c, Shop.buyItem(server(c), player, Integer.parseInt(what)));
+        } catch (NumberFormatException e) {
+            c.getSource().sendFailure(Component.literal("Unknown: " + what + ". See /cg shop."));
+            return 0;
+        }
+    }
+
+    private static int shopResult(CommandContext<CommandSourceStack> c, Shop.Result result) {
+        if (result.ok()) {
+            c.getSource().sendSuccess(() -> Kogane.line(result.message()), false);
+            return 1;
+        }
+        c.getSource().sendFailure(Component.literal(result.message()));
+        return 0;
+    }
+
+    private static int listRules(CommandContext<CommandSourceStack> c) {
+        EventState state = EventState.get(server(c));
+        MutableComponent msg = Kogane.line("Rules cost " + CgConfig.RULE_COST.get() + " points. Click to add.").copy();
+        for (EventRule r : EventRule.values()) {
+            boolean active = state.hasRule(r.id());
+            msg.append(Component.literal("\n " + (active ? "[in play] " : "") + r.id() + ": " + r.description())
+                    .withStyle(s -> active ? s.withColor(ChatFormatting.GRAY)
+                            : s.withColor(ChatFormatting.AQUA).withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/cg addrule " + r.id()))));
+        }
+        c.getSource().sendSuccess(() -> msg, false);
+        return state.rules().size();
+    }
+
+    private static int addRule(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        EventRule rule = EventRule.byId(StringArgumentType.getString(c, "rule"));
+        if (rule == null) {
+            c.getSource().sendFailure(Component.literal("Unknown rule. See /cg rules."));
+            return 0;
+        }
+        return shopResult(c, Shop.addRule(server(c), c.getSource().getPlayerOrException(), rule));
+    }
+
+    private static int transfer(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        ServerPlayer to = EntityArgument.getPlayer(c, "player");
+        return shopResult(c, Shop.transfer(server(c), c.getSource().getPlayerOrException(), to.getUUID(),
+                to.getGameProfile().getName(), IntegerArgumentType.getInteger(c, "amount")));
+    }
+
+    /** Admins always; players with the leaderboard unlocked or the reveal_points rule in play. */
+    private static int leaderboard(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        EventState state = EventState.get(server(c));
+        if (!c.getSource().hasPermission(2)) {
+            ServerPlayer player = c.getSource().getPlayerOrException();
+            if (!Shop.hasAccess(state, player.getUUID(), Shop.Service.LEADERBOARD)) {
+                c.getSource().sendFailure(Component.literal("Buy the leaderboard first: /cg buy leaderboard ("
+                        + Shop.Service.LEADERBOARD.price() + " points)."));
+                return 0;
+            }
+        }
+        String text = Shop.leaderboard(server(c), state, 10);
+        c.getSource().sendSuccess(() -> Component.literal(text), false);
+        return 1;
     }
 }
