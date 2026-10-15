@@ -51,6 +51,15 @@ public final class Penalties {
         }
     }
 
+    /** Ticks a participant may go without gaining points; the longer_timer rule adds to it. */
+    public static long timerLimitTicks(EventState state) {
+        long minutes = CgConfig.TIMER_MINUTES.get();
+        if (state.hasRule(EventRule.LONGER_TIMER.id())) {
+            minutes += CgConfig.LONGER_TIMER_MINUTES.get();
+        }
+        return minutes * TICKS_PER_MINUTE;
+    }
+
     /** Keeps sealed players at 0 cursed energy; Jujutsu Craft regenerates it every tick. */
     static void drainSealed(MinecraftServer server, EventState state) {
         for (UUID id : state.sealedPlayers()) {
@@ -67,7 +76,7 @@ public final class Penalties {
         if (!state.isParticipant(id) || state.isEliminated(id) || state.isSealed(id)) {
             return;
         }
-        long limit = (long) CgConfig.TIMER_MINUTES.get() * TICKS_PER_MINUTE;
+        long limit = timerLimitTicks(state);
         long since = state.ticksSincePointChange(id);
         if (since >= limit) {
             applyPenalty(server, state, player);

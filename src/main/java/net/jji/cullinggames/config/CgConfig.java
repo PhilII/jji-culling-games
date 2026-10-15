@@ -19,6 +19,12 @@ public final class CgConfig {
     public static final ForgeConfigSpec.IntValue WEAK_KILL_POINTS;
     public static final ForgeConfigSpec.IntValue RULE_COST;
     public static final ForgeConfigSpec.BooleanValue WEAK_TARGETS_ALL_HOSTILE;
+    public static final ForgeConfigSpec.IntValue LEADERBOARD_PRICE;
+    public static final ForgeConfigSpec.IntValue TRANSFER_PRICE;
+    public static final ForgeConfigSpec.IntValue KILLLOG_PRICE;
+    public static final ForgeConfigSpec.IntValue LONGER_TIMER_MINUTES;
+    public static final ForgeConfigSpec.ConfigValue<String> MONEY_ITEM;
+    public static final ForgeConfigSpec.IntValue MONEY_PER_POINT;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> WEAK_TARGETS_EXTRA;
 
     static {
@@ -55,6 +61,21 @@ public final class CgConfig {
                 .define("weakTargetsAllHostile", true);
         WEAK_TARGETS_EXTRA = b.comment("Extra entity ids that count as weak targets, e.g. \"jujutsucraft:some_entity\".")
                 .defineListAllowEmpty("weakTargetsExtra", List.of(), o -> o instanceof String);
+        b.pop();
+
+        b.push("shop");
+        LEADERBOARD_PRICE = b.comment("Points to unlock the leaderboard for the rest of the event.")
+                .defineInRange("leaderboardPrice", 10, 0, 100000);
+        TRANSFER_PRICE = b.comment("Points to unlock point transfers for the rest of the event.")
+                .defineInRange("transferPrice", 10, 0, 100000);
+        KILLLOG_PRICE = b.comment("Points to unlock the kill log for the rest of the event.")
+                .defineInRange("killLogPrice", 20, 0, 100000);
+        LONGER_TIMER_MINUTES = b.comment("Extra timer minutes from the longer_timer rule.")
+                .defineInRange("longerTimerMinutes", 10, 1, 24 * 60);
+        MONEY_ITEM = b.comment("Item Kogane pays out when points are cashed out (Lightman's Currency coin). Empty disables cash-out.")
+                .define("moneyItem", "lightmanscurrency:coin_copper");
+        MONEY_PER_POINT = b.comment("How many of moneyItem one point is worth.")
+                .defineInRange("moneyPerPoint", 1, 1, 64);
         b.pop();
 
         SPEC = b.build();

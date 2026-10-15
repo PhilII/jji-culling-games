@@ -12,6 +12,7 @@ import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -48,6 +49,12 @@ public final class EventState extends SavedData {
      * Survives the next event start; an entry is removed once applied at login.
      */
     private final Map<UUID, CompoundTag> restoreOnLogin = new HashMap<>();
+    /** Services each player has bought this event (leaderboard, transfer, killlog). */
+    private final Map<UUID, Set<String>> unlocks = new HashMap<>();
+    /** Rules added this event (EventRule names). */
+    private final Set<String> rules = new LinkedHashSet<>();
+    /** runningTicks at which the event ends by itself, or -1. */
+    private long endAtTicks = -1;
 
     public static EventState get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(EventState::load, EventState::new, DATA_NAME);
@@ -116,6 +123,21 @@ public final class EventState extends SavedData {
                 s.restoreOnLogin.put(id, restores.getCompound(key));
             }
         }
+        CompoundTag unlockTag = tag.getCompound("unlocks");
+        for (String key : unlockTag.getAllKeys()) {
+            UUID id = parseUuid(key);
+            if (id != null) {
+                Set<String> set = new HashSet<>();
+                for (Tag t : unlockTag.getList(key, Tag.TAG_STRING)) {
+                    set.add(t.getAsString());
+                }
+                s.unlocks.put(id, set);
+            }
+        }
+        for (Tag t : tag.getList("rules", Tag.TAG_STRING)) {
+            s.rules.add(t.getAsString());
+        }
+        s.endAtTicks = tag.contains("endAtTicks") ? tag.getLong("endAtTicks") : -1;
         for (Tag t : tag.getList("kills", Tag.TAG_COMPOUND)) {
             KillRecord k = KillRecord.load((CompoundTag) t);
             if (k != null) {
@@ -177,6 +199,17 @@ public final class EventState extends SavedData {
         CompoundTag restores = new CompoundTag();
         restoreOnLogin.forEach((id, v) -> restores.put(id.toString(), v.copy()));
         tag.put("restoreOnLogin", restores);
+        CompoundTag unlockTag = new CompoundTag();
+        unlocks.forEach((id, set) -> {
+            ListTag l = new ListTag();
+            set.forEach(v -> l.add(StringTag.valueOf(v)));
+            unlockTag.put(id.toString(), l);
+        });
+        tag.put("unlocks", unlockTag);
+        ListTag ruleList = new ListTag();
+        rules.forEach(r -> ruleList.add(StringTag.valueOf(r)));
+        tag.put("rules", ruleList);
+        tag.putLong("endAtTicks", endAtTicks);
         return tag;
     }
 
@@ -206,6 +239,9 @@ public final class EventState extends SavedData {
         this.eliminated.clear();
         this.sealed.clear();
         this.gameModeBefore.clear();
+        this.unlocks.clear();
+        this.rules.clear();
+        this.endAtTicks = -1;
         setDirty();
     }
 
@@ -222,6 +258,7 @@ public final class EventState extends SavedData {
         this.sealed.clear();
         this.eliminated.clear();
         this.gameModeBefore.clear();
+        this.endAtTicks = -1;
         setDirty();
     }
 
@@ -257,16 +294,43 @@ public final class EventState extends SavedData {
         setDirty();
     }
 
-    /** Sets a player's points. Returns true if the value changed (which resets their timer). */
+    /**
+     * Sets a player's points. Returns true if they went up. Only gains reset the timer:
+     * otherwise spending a single point would dodge the penalty.
+     */
     boolean setPoints(UUID id, int value) {
         int old = points.getOrDefault(id, 0);
         if (old == value) {
             return false;
         }
         points.put(id, value);
-        lastPointChange.put(id, runningTicks);
+        boolean gained = value > old;
+        if (gained) {
+            lastPointChange.put(id, runningTicks);
+        }
         setDirty();
-        return true;
+        return gained;
+    }
+
+    boolean unlock(UUID id, String service) {
+        boolean added = unlocks.computeIfAbsent(id, k -> new HashSet<>()).add(service);
+        if (added) {
+            setDirty();
+        }
+        return added;
+    }
+
+    boolean addRule(String rule) {
+        boolean added = rules.add(rule);
+        if (added) {
+            setDirty();
+        }
+        return added;
+    }
+
+    void setEndAt(long ticks) {
+        endAtTicks = ticks;
+        setDirty();
     }
 
     /** Restarts the player's timer without a point change (after a life-loss penalty). */
@@ -333,6 +397,22 @@ public final class EventState extends SavedData {
     }
 
     // --- reads ---
+
+    public boolean hasUnlocked(UUID id, String service) {
+        return unlocks.getOrDefault(id, Set.of()).contains(service);
+    }
+
+    public boolean hasRule(String rule) {
+        return rules.contains(rule);
+    }
+
+    public Set<String> rules() {
+        return Collections.unmodifiableSet(rules);
+    }
+
+    public long endAtTicks() {
+        return endAtTicks;
+    }
 
     public int startingLives() {
         return startingLives;

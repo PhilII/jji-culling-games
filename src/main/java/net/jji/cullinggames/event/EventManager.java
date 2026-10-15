@@ -63,6 +63,18 @@ public final class EventManager {
         return Result.OK;
     }
 
+    /** Ends the event after `minutes` of running time, with a warning to spend points. */
+    public static Result stopIn(MinecraftServer server, int minutes) {
+        EventState state = EventState.get(server);
+        if (!state.phase().isActive()) {
+            return Result.NOT_ACTIVE;
+        }
+        state.setEndAt(state.runningTicks() + (long) minutes * 20 * 60);
+        Kogane.broadcast(server, "The Culling Games end in " + minutes + (minutes == 1 ? " minute" : " minutes")
+                + ". Spend your points before then.");
+        return Result.OK;
+    }
+
     public static Result pause(MinecraftServer server) {
         EventState state = EventState.get(server);
         if (state.phase() != EventPhase.RUNNING) {
@@ -130,9 +142,23 @@ public final class EventManager {
         if (event.phase != TickEvent.Phase.END) {
             return;
         }
-        EventState state = EventState.get(event.getServer());
-        if (state.phase() == EventPhase.RUNNING) {
-            state.tickRunning();
+        tick(event.getServer());
+    }
+
+    /** One server tick of event time. Package-visible for tests. */
+    static void tick(MinecraftServer server) {
+        EventState state = EventState.get(server);
+        if (state.phase() != EventPhase.RUNNING) {
+            return;
+        }
+        state.tickRunning();
+        if (state.endAtTicks() >= 0) {
+            long left = state.endAtTicks() - state.runningTicks();
+            if (left == 20 * 60) {
+                Kogane.broadcast(server, "One minute until the Culling Games end. Spend your points now.");
+            } else if (left <= 0) {
+                stop(server);
+            }
         }
     }
 

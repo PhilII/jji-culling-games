@@ -16,8 +16,8 @@ This file is the source of truth for the build. Every session starts by reading 
 | 2 | Colonies + barrier | done | `step2/colonies` | `v0.2-colonies` |
 | 3 | Points + kill log | done | `step3/points` | `v0.3-points` |
 | 4 | Timer + penalty + event lives | done | `step4/penalty` | `v0.4-penalty` |
-| 5 | Kogane + shop | next | `step5/kogane-shop` | `v0.5-kogane-shop` |
-| 6 | Client HUD + screens | not started | `step6/client` | `v0.6-client` |
+| 5 | Kogane + shop | done | `step5/kogane-shop` | `v0.5-kogane-shop` |
+| 6 | Client HUD + screens | next | `step6/client` | `v0.6-client` |
 | 7 | Polish + release | not started | `step7/release` | `v1.0.0` |
 
 ## Decided
@@ -99,6 +99,7 @@ Goal: a jar the server can run in a real event.
 - **Done when**: one full test event runs start to finish on the real modpack.
 
 ## Open questions (do not block work)
+- Red: are the 4 starter rules right (reveal_points, double_points, longer_timer, free_transfers)? Prices (leaderboard 10, transfer 10, kill log 20, rule 100) and coin per point are config.
 - Do Jujutsu Craft shikigami/summons count as `OwnableEntity`? If not, their kills don't credit the owner yet. Check in the real modpack.
 - Which JJC entities are "weak targets"? Default: every hostile mob. Extra ids can go in `weakTargetsExtra`.
 - Red: final OK on scope; Kogane bossbar; end rewards; which rules can be bought.
@@ -122,12 +123,13 @@ Goal: a jar the server can run in a real event.
 - Copy the server's jars into `libs/` (git-ignored): `JujutsuCraft-ver51-forge-1.20.1.jar`, `geckolib-forge-1.20.1-4.7.2.jar`, `player-animation-lib-forge-1.0.2-rc1+1.20.jar` from `../server-copy/mods/`.
 - `build.gradle` deobfuscates every jar in `libs/` onto the dev runtime only. The mod never compiles against them.
 - Without `libs/`, the build and tests still run; JJC-specific checks are skipped.
+- Lightman's Currency can't be loaded in the dev test server (it loads a client class on the dedicated server). Cash-out is tested for the "coin item missing" path only; test real coins on the server.
 
 ## Local test server
 - `run/` is git-ignored. EULA accepted by PhilL for local testing (16 Oct). RCON on 127.0.0.1:25575, password in `run/server.properties`.
 - `./gradlew runServer`, then send commands over RCON. Console commands run as permission level 4.
 
 ## Automated tests
-- `./gradlew runGameTestServer` runs all GameTests (namespace `cullinggames`) and exits non-zero on failure. Run it before every PR.
+- Run `./scripts/gametest.sh` before every PR. It runs `./gradlew runGameTestServer` and checks the log for "All N required tests passed". Gradle alone exits 0 even when the test server crashes on startup.
 - Tests use the `cullinggames:empty` structure template. Don't use `GameTestHelper.makeMockServerPlayerInLevel()` (crashes on Forge 1.20.1); use the EmbeddedChannel test player in `ColonyGameTests`.
 - Tests that touch global state (event, colonies) go in their own `batch` so they never run at the same time.
