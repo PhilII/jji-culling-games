@@ -2,6 +2,7 @@ package net.jji.cullinggames.compat;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.UUID;
 import net.jji.cullinggames.CullingGames;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -100,6 +101,23 @@ public final class JujutsuCraft {
             return field.getDouble(v);
         } catch (IllegalAccessException e) {
             return Double.NaN;
+        }
+    }
+
+    /**
+     * The player who summoned this entity (shikigami, Mahoraga, dolls...), from the "OWNER_UUID" string that
+     * Jujutsu Craft writes into a summon's persistent data. Null if it is not a summon. Plain NBT, so it
+     * works without reflection.
+     */
+    public static UUID summonOwner(Entity entity) {
+        String raw = entity.getPersistentData().getString("OWNER_UUID");
+        if (raw.isEmpty()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 }

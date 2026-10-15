@@ -58,6 +58,8 @@ public final class CgCommands {
 
     private static void register(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("cg")
+                .executes(CgCommands::help)
+                .then(Commands.literal("help").executes(CgCommands::help))
                 .then(admin("start")
                         .executes(c -> start(c, CgConfig.DEFAULT_PENALTY.get(), CgConfig.EVENT_LIVES.get()))
                         .then(Commands.argument("penalty", StringArgumentType.word())
@@ -69,7 +71,7 @@ public final class CgCommands {
                 .then(admin("stop").executes(c -> report(c, EventManager.stop(server(c)), "Event stopped."))
                         .then(Commands.argument("minutes", IntegerArgumentType.integer(1, 24 * 60))
                                 .executes(c -> report(c, EventManager.stopIn(server(c), IntegerArgumentType.getInteger(c, "minutes")),
-                                        "Event will end in " + IntegerArgumentType.getInteger(c, "minutes") + " minutes."))))
+                                        "Event will end in " + minutes(IntegerArgumentType.getInteger(c, "minutes")) + "."))))
                 .then(admin("pause").executes(c -> report(c, EventManager.pause(server(c)), "Event paused.")))
                 .then(admin("resume").executes(c -> report(c, EventManager.resume(server(c)), "Event resumed.")))
                 .then(admin("status").executes(CgCommands::status))
@@ -99,6 +101,10 @@ public final class CgCommands {
                 .then(Commands.literal("cashout").then(Commands.argument("points", IntegerArgumentType.integer(1, 1_000_000))
                         .executes(c -> shopResult(c, Shop.cashOut(server(c), c.getSource().getPlayerOrException(),
                                 IntegerArgumentType.getInteger(c, "points")))))));
+    }
+
+    private static String minutes(int n) {
+        return n + (n == 1 ? " minute" : " minutes");
     }
 
     /** Admin-only literal (permission level 2). */
@@ -487,5 +493,49 @@ public final class CgCommands {
         String text = Shop.leaderboard(server(c), state, 10);
         c.getSource().sendSuccess(() -> Component.literal(text), false);
         return 1;
+    }
+
+    // --- help ---
+
+    private static final String[][] PLAYER_HELP = {
+        {"/cg points", "your points"},
+        {"/cg shop  (or K)", "Kogane's shop"},
+        {"/cg buy <item|service>", "buy from the shop"},
+        {"/cg rules, /cg addrule <rule>", "rules you can add"},
+        {"/cg transfer <player> <amount>", "send points (buy transfer first)"},
+        {"/cg leaderboard", "standings (buy it first)"},
+        {"/cg killlog", "kill log (buy it first)"},
+        {"/cg cashout <points>", "points to coins"},
+    };
+
+    private static final String[][] ADMIN_HELP = {
+        {"/cg colony add <name> circle <x z> <r>", "or box <x1 z1> <x2 z2>; remove, list, tp"},
+        {"/cg start [seal_ct|lose_life] [lives]", "start the event"},
+        {"/cg pause, resume, status", ""},
+        {"/cg stop [minutes]", "end now, or after minutes with a warning"},
+        {"/cg participant add|remove <player>", ""},
+        {"/cg points get|set|add|remove <player> [n]", ""},
+        {"/cg shop add <price>", "sell the item in your hand; /cg shop remove <id>"},
+        {"/cg killlog [count]", "kill proof"},
+    };
+
+    private static int help(CommandContext<CommandSourceStack> c) {
+        MutableComponent msg = Kogane.line("Culling Games commands").copy();
+        appendHelp(msg, PLAYER_HELP);
+        if (c.getSource().hasPermission(2)) {
+            msg.append(Component.literal("\n Admin:").withStyle(ChatFormatting.GOLD));
+            appendHelp(msg, ADMIN_HELP);
+        }
+        c.getSource().sendSuccess(() -> msg, false);
+        return 1;
+    }
+
+    private static void appendHelp(MutableComponent msg, String[][] lines) {
+        for (String[] line : lines) {
+            msg.append(Component.literal("\n " + line[0]).withStyle(ChatFormatting.AQUA));
+            if (!line[1].isEmpty()) {
+                msg.append(Component.literal(" - " + line[1]).withStyle(ChatFormatting.GRAY));
+            }
+        }
     }
 }

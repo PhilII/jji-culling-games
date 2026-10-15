@@ -85,33 +85,43 @@ public final class PointsGameTests {
             kill(p1, p1);
             check(h, state.points(p1.getUUID()) == 6, "killing yourself gives nothing");
 
+            // Jujutsu Craft summons carry OWNER_UUID: kills credit the summoner, and summons are never worth points.
+            LivingEntity shikigami = EntityType.ZOMBIE.create(h.getLevel());
+            shikigami.getPersistentData().putString("OWNER_UUID", p1.getStringUUID());
+            kill(shikigami, p1);
+            check(h, state.points(p1.getUUID()) == 6, "killing your own summon gives nothing");
+            kill(shikigami, p2);
+            check(h, state.points(p2.getUUID()) == 0, "killing someone else's summon gives nothing");
+            MinecraftForge.EVENT_BUS.post(new LivingDeathEvent(zombie, shikigami.damageSources().mobAttack(shikigami)));
+            check(h, state.points(p1.getUUID()) == 7, "a summon's kill credits its owner");
+
             LivingDeathEvent cancelled = new LivingDeathEvent(zombie, p1.damageSources().playerAttack(p1));
             cancelled.setCanceled(true);
             MinecraftForge.EVENT_BUS.post(cancelled);
-            check(h, state.points(p1.getUUID()) == 6, "cancelled death (totem) gives nothing");
+            check(h, state.points(p1.getUUID()) == 7, "cancelled death (totem) gives nothing");
 
             outsider = TestPlayers.create(h, "gt_k3");
             EventManager.removeParticipant(server, outsider);
             kill(zombie, outsider);
             check(h, state.points(outsider.getUUID()) == 0, "non-participant gets nothing");
             kill(outsider, p1);
-            check(h, state.points(p1.getUUID()) == 6, "killing a non-participant gives nothing");
+            check(h, state.points(p1.getUUID()) == 7, "killing a non-participant gives nothing");
 
             EventManager.pause(server);
             kill(zombie, p1);
-            check(h, state.points(p1.getUUID()) == 6, "no points while paused");
+            check(h, state.points(p1.getUUID()) == 7, "no points while paused");
             EventManager.resume(server);
 
             check(h, Points.add(server, p2.getUUID(), 10) == 10, "admin add");
             check(h, Points.set(server, p2.getUUID(), -5) == 0, "points never go below 0");
 
             EventState copy = EventState.load(state.save(new CompoundTag()));
-            check(h, copy.points(p1.getUUID()) == 6 && copy.kills().equals(state.kills())
+            check(h, copy.points(p1.getUUID()) == 7 && copy.kills().equals(state.kills())
                     && copy.ticksSincePointChange(p2.getUUID()) == state.ticksSincePointChange(p2.getUUID()),
                     "points, timer and kill log survive save/load");
 
             EventManager.stop(server);
-            check(h, state.points(p1.getUUID()) == 6 && state.kills().size() == 2, "results kept after stop");
+            check(h, state.points(p1.getUUID()) == 7 && state.kills().size() == 3, "results kept after stop");
             EventManager.start(server, PenaltyMode.SEAL_CT);
             check(h, state.points(p1.getUUID()) == 0 && state.kills().isEmpty(), "next event starts clean");
         } finally {

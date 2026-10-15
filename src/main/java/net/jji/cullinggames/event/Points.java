@@ -2,6 +2,7 @@ package net.jji.cullinggames.event;
 
 import java.util.UUID;
 import net.jji.cullinggames.CullingGames;
+import net.jji.cullinggames.compat.JujutsuCraft;
 import net.jji.cullinggames.config.CgConfig;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,7 +45,7 @@ public final class Points {
         if (state.phase() != EventPhase.RUNNING) {
             return;
         }
-        ServerPlayer killer = resolveKiller(event.getSource());
+        ServerPlayer killer = resolveKiller(server, event.getSource());
         if (killer == null || killer == victim || !state.isParticipant(killer.getUUID())) {
             return;
         }
@@ -68,8 +69,11 @@ public final class Points {
         CullingGames.LOGGER.debug("{} killed {} for {} points", killer.getGameProfile().getName(), victimName, award);
     }
 
-    /** The player behind the damage: direct attacker, projectile owner, or owner of a tamed/summoned entity. */
-    static ServerPlayer resolveKiller(DamageSource source) {
+    /**
+     * The player behind the damage: direct attacker, projectile owner, owner of a tamed entity, or the player
+     * who summoned a Jujutsu Craft shikigami (those are Monsters, not tamed, so they carry OWNER_UUID instead).
+     */
+    static ServerPlayer resolveKiller(MinecraftServer server, DamageSource source) {
         Entity entity = source.getEntity();
         if (entity instanceof ServerPlayer player) {
             return player;
@@ -77,12 +81,18 @@ public final class Points {
         if (entity instanceof OwnableEntity ownable && ownable.getOwner() instanceof ServerPlayer owner) {
             return owner;
         }
-        return null;
+        UUID summoner = entity == null ? null : JujutsuCraft.summonOwner(entity);
+        return summoner == null ? null : server.getPlayerList().getPlayer(summoner);
     }
 
     static int pointsFor(EventState state, LivingEntity victim) {
         if (victim instanceof ServerPlayer player) {
             return state.isParticipant(player.getUUID()) ? CgConfig.PLAYER_KILL_POINTS.get() : 0;
+        }
+        // Someone's summon is never a weak target, or players could farm points off their own shikigami.
+        if (JujutsuCraft.summonOwner(victim) != null
+                || victim instanceof OwnableEntity ownable && ownable.getOwnerUUID() != null) {
+            return 0;
         }
         if (CgConfig.WEAK_TARGETS_ALL_HOSTILE.get() && victim instanceof Enemy) {
             return CgConfig.WEAK_KILL_POINTS.get();
