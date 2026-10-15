@@ -11,8 +11,8 @@ This file is the source of truth for the build. Every session starts by reading 
 
 | Step | Name | Status | Branch | Checkpoint tag |
 |---|---|---|---|---|
-| 0 | Repo + project setup | in progress | `setup/forge-mdk` | `v0.0-setup` |
-| 1 | Event skeleton | not started | `step1/event-core` | `v0.1-event-core` |
+| 0 | Repo + project setup | done | `setup/forge-mdk` | `v0.0-setup` |
+| 1 | Event skeleton | next | `step1/event-core` | `v0.1-event-core` |
 | 2 | Colonies + barrier | not started | `step2/colonies` | `v0.2-colonies` |
 | 3 | Points + kill log | not started | `step3/points` | `v0.3-points` |
 | 4 | Timer + penalty + event lives | not started | `step4/penalty` | `v0.4-penalty` |
@@ -109,3 +109,8 @@ Goal: a jar the server can run in a real event.
 - After each merged step: tag the merge commit (`v0.N-name`) and push the tag. These tags are the checkpoints to go back to.
 - Update the status table in this file in the same PR that finishes a step.
 - Never commit secrets, server files, world data or other mods' jars.
+
+## Build
+- JDK 17 (Homebrew): `export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
+- `./gradlew build` → `build/libs/cullinggames-<version>.jar`
+- If a build hangs on downloads, add `-Dorg.gradle.internal.http.connectionTimeout=60000 -Dorg.gradle.internal.http.socketTimeout=120000`.
