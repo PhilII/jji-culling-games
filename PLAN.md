@@ -14,8 +14,8 @@ This file is the source of truth for the build. Every session starts by reading 
 | 0 | Repo + project setup | done | `setup/forge-mdk` | `v0.0-setup` |
 | 1 | Event skeleton | done | `step1/event-core` | `v0.1-event-core` |
 | 2 | Colonies + barrier | done | `step2/colonies` | `v0.2-colonies` |
-| 3 | Points + kill log | next | `step3/points` | `v0.3-points` |
-| 4 | Timer + penalty + event lives | not started | `step4/penalty` | `v0.4-penalty` |
+| 3 | Points + kill log | done | `step3/points` | `v0.3-points` |
+| 4 | Timer + penalty + event lives | next | `step4/penalty` | `v0.4-penalty` |
 | 5 | Kogane + shop | not started | `step5/kogane-shop` | `v0.5-kogane-shop` |
 | 6 | Client HUD + screens | not started | `step6/client` | `v0.6-client` |
 | 7 | Polish + release | not started | `step7/release` | `v1.0.0` |
@@ -98,6 +98,8 @@ Goal: a jar the server can run in a real event.
 - **Done when**: one full test event runs start to finish on the real modpack.
 
 ## Open questions (do not block work)
+- Do Jujutsu Craft shikigami/summons count as `OwnableEntity`? If not, their kills don't credit the owner yet. Check in the real modpack.
+- Which JJC entities are "weak targets"? Default: every hostile mob. Extra ids can go in `weakTargetsExtra`.
 - Red: final OK on scope; Kogane bossbar; end rewards; which rules can be bought.
 - Is JujutsuAlm still on the server? (configs exist, no jar found)
 - Which CT value means "no CT" (step 4 test).

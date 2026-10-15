@@ -1,5 +1,6 @@
 package net.jji.cullinggames.config;
 
+import java.util.List;
 import net.jji.cullinggames.event.PenaltyMode;
 import net.minecraftforge.common.ForgeConfigSpec;
 
@@ -16,6 +17,8 @@ public final class CgConfig {
     public static final ForgeConfigSpec.IntValue PLAYER_KILL_POINTS;
     public static final ForgeConfigSpec.IntValue WEAK_KILL_POINTS;
     public static final ForgeConfigSpec.IntValue RULE_COST;
+    public static final ForgeConfigSpec.BooleanValue WEAK_TARGETS_ALL_HOSTILE;
+    public static final ForgeConfigSpec.ConfigValue<List<? extends String>> WEAK_TARGETS_EXTRA;
 
     static {
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
@@ -45,6 +48,10 @@ public final class CgConfig {
                 .defineInRange("weakKill", 1, 0, 1000);
         RULE_COST = b.comment("Points needed to add a rule.")
                 .defineInRange("ruleCost", 100, 0, 100000);
+        WEAK_TARGETS_ALL_HOSTILE = b.comment("Every hostile mob (zombies, cursed spirits that count as monsters) is a weak target.")
+                .define("weakTargetsAllHostile", true);
+        WEAK_TARGETS_EXTRA = b.comment("Extra entity ids that count as weak targets, e.g. \"jujutsucraft:some_entity\".")
+                .defineListAllowEmpty("weakTargetsExtra", List.of(), o -> o instanceof String);
         b.pop();
 
         SPEC = b.build();
