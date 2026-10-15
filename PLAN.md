@@ -12,8 +12,8 @@ This file is the source of truth for the build. Every session starts by reading 
 | Step | Name | Status | Branch | Checkpoint tag |
 |---|---|---|---|---|
 | 0 | Repo + project setup | done | `setup/forge-mdk` | `v0.0-setup` |
-| 1 | Event skeleton | next | `step1/event-core` | `v0.1-event-core` |
-| 2 | Colonies + barrier | not started | `step2/colonies` | `v0.2-colonies` |
+| 1 | Event skeleton | done | `step1/event-core` | `v0.1-event-core` |
+| 2 | Colonies + barrier | next | `step2/colonies` | `v0.2-colonies` |
 | 3 | Points + kill log | not started | `step3/points` | `v0.3-points` |
 | 4 | Timer + penalty + event lives | not started | `step4/penalty` | `v0.4-penalty` |
 | 5 | Kogane + shop | not started | `step5/kogane-shop` | `v0.5-kogane-shop` |
@@ -114,3 +114,7 @@ Goal: a jar the server can run in a real event.
 - JDK 17 (Homebrew): `export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
 - `./gradlew build` → `build/libs/cullinggames-<version>.jar`
 - If a build hangs on downloads, add `-Dorg.gradle.internal.http.connectionTimeout=60000 -Dorg.gradle.internal.http.socketTimeout=120000`.
+
+## Local test server
+- `run/` is git-ignored. EULA accepted by PhilL for local testing (16 Oct). RCON on 127.0.0.1:25575, password in `run/server.properties`.
+- `./gradlew runServer`, then send commands over RCON. Console commands run as permission level 4.
