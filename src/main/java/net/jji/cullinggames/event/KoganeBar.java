@@ -1,9 +1,12 @@
 package net.jji.cullinggames.event;
 
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
+import net.jji.cullinggames.network.CgNetwork;
+import net.jji.cullinggames.network.HudSyncPacket;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerBossEvent;
@@ -14,11 +17,13 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
- * Kogane's bossbar: one private bar per participant with their own points and time left to score.
- * Placeholder until the step 6 HUD. Updated once a second.
+ * Kogane's status for each participant, once a second. Players with the mod get a HUD packet;
+ * players without it get a private bossbar with the same information.
  */
 public final class KoganeBar {
     private static final Map<UUID, ServerBossEvent> BARS = new HashMap<>();
+    /** Players whose client HUD is currently showing, so it can be hidden when they drop out. */
+    private static final Set<UUID> HUD_SHOWN = new HashSet<>();
 
     private KoganeBar() {}
 
@@ -32,13 +37,20 @@ public final class KoganeBar {
 
     static void update(MinecraftServer server) {
         EventState state = EventState.get(server);
-        if (!state.phase().isActive()) {
-            clearAll();
-            return;
-        }
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             UUID id = p.getUUID();
-            if (!state.isParticipant(id) || state.isEliminated(id)) {
+            boolean shown = state.phase().isActive() && state.isParticipant(id) && !state.isEliminated(id);
+            if (CgNetwork.hasMod(p)) {
+                remove(id);
+                if (shown) {
+                    CgNetwork.send(p, Views.hud(server, p));
+                    HUD_SHOWN.add(id);
+                } else if (HUD_SHOWN.remove(id)) {
+                    CgNetwork.send(p, HudSyncPacket.INACTIVE);
+                }
+                continue;
+            }
+            if (!shown) {
                 remove(id);
                 continue;
             }
@@ -51,6 +63,7 @@ public final class KoganeBar {
         }
         // Bars of players who logged out are dropped; they get a new one at login.
         BARS.keySet().removeIf(id -> server.getPlayerList().getPlayer(id) == null);
+        HUD_SHOWN.removeIf(id -> server.getPlayerList().getPlayer(id) == null);
     }
 
     private static void render(EventState state, ServerBossEvent bar, UUID id) {
@@ -92,15 +105,9 @@ public final class KoganeBar {
         }
     }
 
-    static void clearAll() {
-        for (Iterator<ServerBossEvent> it = BARS.values().iterator(); it.hasNext(); ) {
-            it.next().removeAllPlayers();
-            it.remove();
-        }
-    }
-
     @SubscribeEvent
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         remove(event.getEntity().getUUID());
+        HUD_SHOWN.remove(event.getEntity().getUUID());
     }
 }

@@ -93,6 +93,7 @@ public final class Penalties {
             Kogane.tell(player, minutes + (minutes == 1 ? " minute" : " minutes")
                     + " left to change your points, or face the penalty.");
             player.displayClientMessage(Kogane.line(minutes + " min left to score"), true);
+            Kogane.cue(player, Kogane.Cue.WARNING);
         }
     }
 
@@ -120,6 +121,7 @@ public final class Penalties {
                     player.getGameProfile().getName());
         }
         Kogane.tell(player, "Your points did not change in time. Your cursed technique is sealed until you score.");
+        Kogane.cue(player, Kogane.Cue.PENALTY);
     }
 
     /** Unseals and gives back the saved cursed energy (capped at the current max). Offline players get it at login. */
@@ -138,6 +140,7 @@ public final class Penalties {
         restoreCursedEnergy(player, saved);
         if (announce) {
             Kogane.tell(player, "Your cursed technique is unsealed.");
+            Kogane.cue(player, Kogane.Cue.GOOD);
         }
     }
 
@@ -166,9 +169,11 @@ public final class Penalties {
         int left = state.loseLife(player.getUUID());
         if (left > 0) {
             Kogane.tell(player, left + (left == 1 ? " life" : " lives") + " left.");
+            Kogane.cue(player, Kogane.Cue.PENALTY);
             return;
         }
         Kogane.broadcast(server, player.getGameProfile().getName() + " is out of the Culling Games.");
+        Kogane.cue(player, Kogane.Cue.OUT);
         state.rememberGameMode(player.getUUID(), player.gameMode.getGameModeForPlayer().getName());
         unseal(server, state, player.getUUID(), false);
         if (alive) {

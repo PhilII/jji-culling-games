@@ -8,6 +8,7 @@ import net.jji.cullinggames.event.EventManager;
 import net.jji.cullinggames.event.KoganeBar;
 import net.jji.cullinggames.event.Penalties;
 import net.jji.cullinggames.event.Points;
+import net.jji.cullinggames.network.CgNetwork;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -21,6 +22,7 @@ public final class CullingGames {
 
     public CullingGames(FMLJavaModLoadingContext context) {
         context.registerConfig(ModConfig.Type.SERVER, CgConfig.SPEC);
+        CgNetwork.register();
         MinecraftForge.EVENT_BUS.register(EventManager.class);
         MinecraftForge.EVENT_BUS.register(CgCommands.class);
         MinecraftForge.EVENT_BUS.register(Barrier.class);

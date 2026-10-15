@@ -88,6 +88,14 @@ minecraft {
         client {
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             property 'forge.enabledGameTestNamespaces', mod_id
+            // ./gradlew runClient -PjoinLocal joins the local dev server (runServer, port 25566) on start.
+            if (project.hasProperty('joinLocal')) {
+                args '--quickPlayMultiplayer', 'localhost:25566'
+            }
+            // ./gradlew runClient -PjoinLocal -PselfTest=<shop id> buys that item through the real packet path ~10 s after joining.
+            if (project.hasProperty('selfTest')) {
+                property 'cullinggames.selfTestBuy', project.property('selfTest').toString()
+            }
         }
 
         server {

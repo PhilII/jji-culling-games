@@ -5,8 +5,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 
-/** Kogane's voice. Placeholder: chat only until step 5 adds bossbar and titles. */
+/** Kogane's voice: chat lines and placeholder sounds (vanilla sounds until custom ones exist). */
 public final class Kogane {
     private Kogane() {}
 
@@ -24,5 +27,25 @@ public final class Kogane {
 
     public static void tell(ServerPlayer player, String text) {
         player.sendSystemMessage(line(text));
+    }
+
+    public enum Cue {
+        WARNING(SoundEvents.NOTE_BLOCK_BELL.value(), 1.0f),
+        PENALTY(SoundEvents.ANVIL_LAND, 0.8f),
+        GOOD(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.2f),
+        OUT(SoundEvents.WITHER_SPAWN, 1.0f);
+
+        private final SoundEvent sound;
+        private final float pitch;
+
+        Cue(SoundEvent sound, float pitch) {
+            this.sound = sound;
+            this.pitch = pitch;
+        }
+    }
+
+    /** Plays a sound only this player hears. */
+    public static void cue(ServerPlayer player, Cue cue) {
+        player.playNotifySound(cue.sound, SoundSource.MASTER, 0.8f, cue.pitch);
     }
 }

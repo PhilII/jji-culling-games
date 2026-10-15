@@ -26,6 +26,8 @@ import net.jji.cullinggames.event.Kogane;
 import net.jji.cullinggames.event.PenaltyMode;
 import net.jji.cullinggames.event.Points;
 import net.jji.cullinggames.event.Shop;
+import net.jji.cullinggames.event.Views;
+import net.jji.cullinggames.network.CgNetwork;
 import net.jji.cullinggames.shop.ShopStore;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -376,6 +378,10 @@ public final class CgCommands {
 
     private static int showShop(CommandContext<CommandSourceStack> c) {
         MinecraftServer server = server(c);
+        if (c.getSource().getEntity() instanceof ServerPlayer player && CgNetwork.hasMod(player)) {
+            CgNetwork.send(player, Views.shop(server, player, ""));
+            return 1;
+        }
         MutableComponent msg = Kogane.line("Shop. Click to buy.").copy();
         msg.append(buyLine("Leaderboard (rest of event)", Shop.Service.LEADERBOARD.price(), "leaderboard"));
         msg.append(buyLine("Point transfers (rest of event)", Shop.Service.TRANSFER.price(), "transfer"));
