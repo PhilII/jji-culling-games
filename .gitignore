@@ -1,0 +1,24 @@
+# Gradle / build
+.gradle/
+build/
+out/
+run/
+runs/
+logs/
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+
+# OS
+.DS_Store
+
+# Never commit other mods' jars, server or world data
+libs/*.jar
+*.dat
