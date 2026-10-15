@@ -17,8 +17,8 @@ This file is the source of truth for the build. Every session starts by reading 
 | 3 | Points + kill log | done | `step3/points` | `v0.3-points` |
 | 4 | Timer + penalty + event lives | done | `step4/penalty` | `v0.4-penalty` |
 | 5 | Kogane + shop | done | `step5/kogane-shop` | `v0.5-kogane-shop` |
-| 6 | Client HUD + screens | next | `step6/client` | `v0.6-client` |
-| 7 | Polish + release | not started | `step7/release` | `v1.0.0` |
+| 6 | Client HUD + screens | done | `step6/client` | `v0.6-client` |
+| 7 | Polish + release | next | `step7/release` | `v1.0.0` |
 
 ## Decided
 
@@ -128,6 +128,7 @@ Goal: a jar the server can run in a real event.
 ## Local test server
 - `run/` is git-ignored. EULA accepted by PhilL for local testing (16 Oct). RCON on 127.0.0.1:25575, password in `run/server.properties`.
 - `./gradlew runServer`, then send commands over RCON. Console commands run as permission level 4.
+- `./gradlew runClient -PjoinLocal` starts a dev client (user "Dev") that joins the local server. Add `-PselfTest=<shop id>` to make it buy that item through the real packet path ~10 s after joining. Run `execute as Dev run cg shop` over RCON to open the shop screen.
 
 ## Automated tests
 - Run `./scripts/gametest.sh` before every PR. It runs `./gradlew runGameTestServer` and checks the log for "All N required tests passed". Gradle alone exits 0 even when the test server crashes on startup.
