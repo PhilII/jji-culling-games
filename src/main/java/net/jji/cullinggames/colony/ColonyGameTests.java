@@ -1,20 +1,16 @@
 package net.jji.cullinggames.colony;
 
-import com.mojang.authlib.GameProfile;
-import io.netty.channel.embedded.EmbeddedChannel;
 import java.util.Random;
-import java.util.UUID;
 import net.jji.cullinggames.CullingGames;
 import net.jji.cullinggames.event.EventManager;
 import net.jji.cullinggames.event.EventPhase;
 import net.jji.cullinggames.event.EventState;
 import net.jji.cullinggames.event.PenaltyMode;
+import net.jji.cullinggames.test.TestPlayers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.Connection;
-import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -29,19 +25,6 @@ public final class ColonyGameTests {
     private static final String TEMPLATE = "empty";
 
     private ColonyGameTests() {}
-
-    /**
-     * GameTestHelper.makeMockServerPlayerInLevel() crashes on Forge 1.20.1 (its Connection has no channel).
-     * An EmbeddedChannel gives the connection a real pipeline, so placeNewPlayer works.
-     */
-    private static ServerPlayer testPlayer(GameTestHelper h, String name) {
-        MinecraftServer server = h.getLevel().getServer();
-        ServerPlayer player = new ServerPlayer(server, h.getLevel(), new GameProfile(UUID.randomUUID(), name));
-        Connection connection = new Connection(PacketFlow.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        server.getPlayerList().placeNewPlayer(connection, player);
-        return player;
-    }
 
     private static void check(GameTestHelper h, boolean ok, String what) {
         if (!ok) {
@@ -105,8 +88,8 @@ public final class ColonyGameTests {
         check(h, store.add(colonyA) && store.add(colonyB), "colonies added");
         check(h, !store.add(Colony.circle("GT_A", h.getLevel().dimension(), 0, 0, 5)), "duplicate name rejected");
 
-        ServerPlayer p1 = testPlayer(h, "gt_p1");
-        ServerPlayer p2 = testPlayer(h, "gt_p2");
+        ServerPlayer p1 = TestPlayers.create(h, "gt_p1");
+        ServerPlayer p2 = TestPlayers.create(h, "gt_p2");
         try {
             check(h, EventManager.start(server, PenaltyMode.SEAL_CT) == EventManager.Result.OK, "event starts");
             EventState state = EventState.get(server);
@@ -140,8 +123,7 @@ public final class ColonyGameTests {
             EventManager.stop(server);
             store.remove("gt_a");
             store.remove("gt_b");
-            server.getPlayerList().remove(p1);
-            server.getPlayerList().remove(p2);
+            TestPlayers.remove(h, p1, p2);
         }
         h.succeed();
     }

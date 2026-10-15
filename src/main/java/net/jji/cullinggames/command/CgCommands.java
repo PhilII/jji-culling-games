@@ -7,18 +7,27 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.time.Duration;
+import com.mojang.authlib.GameProfile;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import net.jji.cullinggames.colony.Colony;
 import net.jji.cullinggames.colony.ColonyService;
 import net.jji.cullinggames.colony.ColonyStore;
 import net.jji.cullinggames.config.CgConfig;
 import net.jji.cullinggames.event.EventManager;
 import net.jji.cullinggames.event.EventState;
+import net.jji.cullinggames.event.KillRecord;
+import net.jji.cullinggames.event.Kogane;
+import net.jji.cullinggames.event.Points;
 import net.jji.cullinggames.event.PenaltyMode;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.GameProfileArgument;
 import net.minecraft.commands.arguments.coordinates.ColumnPosArgument;
 import net.minecraft.server.level.ColumnPos;
 import net.minecraft.network.chat.Component;
@@ -27,7 +36,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-/** /cg admin commands (permission level 2). */
+/** /cg commands. Admin subcommands need permission level 2; "/cg points" alone is for every player. */
 public final class CgCommands {
     private CgCommands() {}
 
@@ -38,23 +47,32 @@ public final class CgCommands {
 
     private static void register(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("cg")
-                .requires(s -> s.hasPermission(2))
-                .then(Commands.literal("start")
+                .then(admin("start")
                         .executes(c -> start(c, CgConfig.DEFAULT_PENALTY.get()))
                         .then(Commands.argument("penalty", StringArgumentType.word())
                                 .suggests((c, b) -> SharedSuggestionProvider.suggest(
                                         Arrays.stream(PenaltyMode.values()).map(m -> m.name().toLowerCase()), b))
                                 .executes(c -> start(c, parsePenalty(c)))))
-                .then(Commands.literal("stop").executes(c -> report(c, EventManager.stop(server(c)), "Event stopped.")))
-                .then(Commands.literal("pause").executes(c -> report(c, EventManager.pause(server(c)), "Event paused.")))
-                .then(Commands.literal("resume").executes(c -> report(c, EventManager.resume(server(c)), "Event resumed.")))
-                .then(Commands.literal("status").executes(CgCommands::status))
+                .then(admin("stop").executes(c -> report(c, EventManager.stop(server(c)), "Event stopped.")))
+                .then(admin("pause").executes(c -> report(c, EventManager.pause(server(c)), "Event paused.")))
+                .then(admin("resume").executes(c -> report(c, EventManager.resume(server(c)), "Event resumed.")))
+                .then(admin("status").executes(CgCommands::status))
                 .then(colonyCommands())
-                .then(Commands.literal("participant")
+                .then(admin("participant")
                         .then(Commands.literal("add").then(Commands.argument("player", EntityArgument.player())
                                 .executes(c -> participant(c, true))))
                         .then(Commands.literal("remove").then(Commands.argument("player", EntityArgument.player())
-                                .executes(c -> participant(c, false))))));
+                                .executes(c -> participant(c, false)))))
+                .then(pointsCommands())
+                .then(admin("killlog")
+                        .executes(c -> killLog(c, 10))
+                        .then(Commands.argument("count", IntegerArgumentType.integer(1, 100))
+                                .executes(c -> killLog(c, IntegerArgumentType.getInteger(c, "count"))))));
+    }
+
+    /** Admin-only literal (permission level 2). */
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> admin(String name) {
+        return Commands.literal(name).requires(s -> s.hasPermission(2));
     }
 
     private static MinecraftServer server(CommandContext<CommandSourceStack> c) {
@@ -122,7 +140,7 @@ public final class CgCommands {
     // --- colonies ---
 
     private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> colonyCommands() {
-        return Commands.literal("colony")
+        return admin("colony")
                 .then(Commands.literal("add").then(Commands.argument("name", StringArgumentType.word())
                         .then(Commands.literal("circle").then(Commands.argument("center", ColumnPosArgument.columnPos())
                                 .then(Commands.argument("radius", IntegerArgumentType.integer(3, 5000))
@@ -212,5 +230,73 @@ public final class CgCommands {
         ServerPlayer player = c.getSource().getPlayerOrException();
         ColonyService.teleportRandom(server(c), player, colony);
         return 1;
+    }
+
+    // --- points and kill log ---
+
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> pointsCommands() {
+        return Commands.literal("points")
+                .executes(CgCommands::ownPoints)
+                .then(admin("get").then(Commands.argument("player", GameProfileArgument.gameProfile())
+                        .executes(c -> changePoints(c, "get", 0))))
+                .then(pointChange("set", 0))
+                .then(pointChange("add", 1))
+                .then(pointChange("remove", 1));
+    }
+
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> pointChange(String op, int min) {
+        return admin(op).then(Commands.argument("player", GameProfileArgument.gameProfile())
+                .then(Commands.argument("amount", IntegerArgumentType.integer(min, 1_000_000))
+                        .executes(c -> changePoints(c, op, IntegerArgumentType.getInteger(c, "amount")))));
+    }
+
+    private static int ownPoints(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        ServerPlayer player = c.getSource().getPlayerOrException();
+        EventState state = EventState.get(server(c));
+        if (!state.isParticipant(player.getUUID())) {
+            c.getSource().sendFailure(Component.literal("You are not in the Culling Games."));
+            return 0;
+        }
+        int pts = state.points(player.getUUID());
+        c.getSource().sendSuccess(() -> Kogane.line("You have " + pts + " points."), false);
+        return pts;
+    }
+
+    private static int changePoints(CommandContext<CommandSourceStack> c, String op, int amount) throws CommandSyntaxException {
+        Collection<GameProfile> profiles = GameProfileArgument.getGameProfiles(c, "player");
+        if (profiles.size() != 1) {
+            c.getSource().sendFailure(Component.literal("Name exactly one player."));
+            return 0;
+        }
+        GameProfile profile = profiles.iterator().next();
+        MinecraftServer server = server(c);
+        int total = switch (op) {
+            case "set" -> Points.set(server, profile.getId(), amount);
+            case "add" -> Points.add(server, profile.getId(), amount);
+            case "remove" -> Points.add(server, profile.getId(), -amount);
+            default -> EventState.get(server).points(profile.getId());
+        };
+        String text = profile.getName() + " has " + total + " points.";
+        c.getSource().sendSuccess(() -> Component.literal(text), !"get".equals(op));
+        return total;
+    }
+
+    private static int killLog(CommandContext<CommandSourceStack> c, int count) {
+        List<KillRecord> kills = EventState.get(server(c)).kills();
+        if (kills.isEmpty()) {
+            c.getSource().sendSuccess(() -> Component.literal("No kills logged."), false);
+            return 0;
+        }
+        SimpleDateFormat fmt = new SimpleDateFormat("HH:mm:ss");
+        StringBuilder sb = new StringBuilder("Kill log (" + kills.size() + " total, newest last):");
+        for (KillRecord k : kills.subList(Math.max(0, kills.size() - count), kills.size())) {
+            sb.append("\n ").append(fmt.format(new Date(k.epochMillis())))
+              .append(" ").append(k.killerName()).append(" killed ").append(k.victimName())
+              .append(" at ").append(k.x()).append(" ").append(k.y()).append(" ").append(k.z())
+              .append(" (").append(k.dimension()).append(") +").append(k.points());
+        }
+        String text = sb.toString();
+        c.getSource().sendSuccess(() -> Component.literal(text), false);
+        return kills.size();
     }
 }
