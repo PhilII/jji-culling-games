@@ -9,6 +9,7 @@ public final class CgConfig {
     public static final ForgeConfigSpec SPEC;
 
     public static final ForgeConfigSpec.BooleanValue ALLOW_LATE_JOIN;
+    public static final ForgeConfigSpec.BooleanValue TELEPORT_TO_SPAWN_ON_END;
     public static final ForgeConfigSpec.IntValue TIMER_MINUTES;
     public static final ForgeConfigSpec.IntValue FIRST_WARNING_MINUTES;
     public static final ForgeConfigSpec.IntValue FINAL_WARNING_MINUTES;
@@ -26,6 +27,8 @@ public final class CgConfig {
         b.push("event");
         ALLOW_LATE_JOIN = b.comment("Players who log in while the event runs are added as participants.")
                 .define("allowLateJoin", true);
+        TELEPORT_TO_SPAWN_ON_END = b.comment("Send participants to world spawn when the event ends.")
+                .define("teleportToSpawnOnEnd", true);
         b.pop();
 
         b.push("penalty");

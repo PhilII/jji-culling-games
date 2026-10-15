@@ -48,11 +48,13 @@ public final class CgCommands {
     private static void register(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("cg")
                 .then(admin("start")
-                        .executes(c -> start(c, CgConfig.DEFAULT_PENALTY.get()))
+                        .executes(c -> start(c, CgConfig.DEFAULT_PENALTY.get(), CgConfig.EVENT_LIVES.get()))
                         .then(Commands.argument("penalty", StringArgumentType.word())
                                 .suggests((c, b) -> SharedSuggestionProvider.suggest(
                                         Arrays.stream(PenaltyMode.values()).map(m -> m.name().toLowerCase()), b))
-                                .executes(c -> start(c, parsePenalty(c)))))
+                                .executes(c -> start(c, parsePenalty(c), CgConfig.EVENT_LIVES.get()))
+                                .then(Commands.argument("lives", IntegerArgumentType.integer(1, 100))
+                                        .executes(c -> start(c, parsePenalty(c), IntegerArgumentType.getInteger(c, "lives"))))))
                 .then(admin("stop").executes(c -> report(c, EventManager.stop(server(c)), "Event stopped.")))
                 .then(admin("pause").executes(c -> report(c, EventManager.pause(server(c)), "Event paused.")))
                 .then(admin("resume").executes(c -> report(c, EventManager.resume(server(c)), "Event resumed.")))
@@ -89,8 +91,9 @@ public final class CgCommands {
         }
     }
 
-    private static int start(CommandContext<CommandSourceStack> c, PenaltyMode penalty) {
-        return report(c, EventManager.start(server(c), penalty), "Event started, penalty " + penalty.name().toLowerCase() + ".");
+    private static int start(CommandContext<CommandSourceStack> c, PenaltyMode penalty, int lives) {
+        return report(c, EventManager.start(server(c), penalty, lives),
+                "Event started, penalty " + penalty.name().toLowerCase() + ", " + lives + " lives.");
     }
 
     private static int report(CommandContext<CommandSourceStack> c, EventManager.Result result, String okText) {
@@ -118,6 +121,9 @@ public final class CgCommands {
             sb.append(" | event #").append(s.eventNumber())
               .append(" | penalty ").append(s.penalty().name().toLowerCase())
               .append(" | participants ").append(s.participants().size())
+              .append(" | lives ").append(s.startingLives())
+              .append(" | sealed ").append(s.sealedPlayers().size())
+              .append(" | out ").append(s.eliminatedPlayers().size())
               .append(" | running time ").append(String.format("%d:%02d:%02d", t.toHours(), t.toMinutesPart(), t.toSecondsPart()));
         }
         String text = sb.toString();

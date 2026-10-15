@@ -22,7 +22,9 @@ public final class Points {
     /** Admin change. Returns the new total. Any actual change resets the player's timer. */
     public static int set(MinecraftServer server, UUID id, int value) {
         EventState state = EventState.get(server);
-        state.setPoints(id, Math.max(0, value));
+        if (state.setPoints(id, Math.max(0, value))) {
+            Penalties.unseal(server, state, id, true);
+        }
         return state.points(id);
     }
 

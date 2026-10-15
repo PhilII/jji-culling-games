@@ -18,8 +18,13 @@ public final class TestPlayers {
      * An EmbeddedChannel gives the connection a real pipeline, so placeNewPlayer works.
      */
     public static ServerPlayer create(GameTestHelper h, String name) {
+        return create(h, name, UUID.randomUUID());
+    }
+
+    /** Same UUID as an earlier player = that player logging back in. */
+    public static ServerPlayer create(GameTestHelper h, String name, UUID id) {
         MinecraftServer server = h.getLevel().getServer();
-        ServerPlayer player = new ServerPlayer(server, h.getLevel(), new GameProfile(UUID.randomUUID(), name));
+        ServerPlayer player = new ServerPlayer(server, h.getLevel(), new GameProfile(id, name));
         Connection connection = new Connection(PacketFlow.SERVERBOUND);
         new EmbeddedChannel(connection);
         server.getPlayerList().placeNewPlayer(connection, player);
