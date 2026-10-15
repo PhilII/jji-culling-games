@@ -18,7 +18,7 @@ This file is the source of truth for the build. Every session starts by reading 
 | 4 | Timer + penalty + event lives | done | `step4/penalty` | `v0.4-penalty` |
 | 5 | Kogane + shop | done | `step5/kogane-shop` | `v0.5-kogane-shop` |
 | 6 | Client HUD + screens | done | `step6/client` | `v0.6-client` |
-| 7 | Polish + release | next | `step7/release` | `v1.0.0` |
+| 7 | Polish + release | in progress (release waits for Red) | `step7/release` | `v1.0.0` |
 
 ## Decided
 
@@ -97,6 +97,11 @@ Goal: a jar the server can run in a real event.
 - Test with the full JJI modpack, then upload to ServerMiner (ask PhilL before upload).
 - Later: publish on CurseForge when the team is happy.
 - **Done when**: one full test event runs start to finish on the real modpack.
+
+## Full-modpack test server
+- `~/fujiwara-local-server` (outside iCloud on purpose: Desktop/Documents files are iCloud placeholders and very slow to read). Full FTP mirror of the server incl. the map, Forge 47.4.10 installed, port 25567, RCON 25576, offline mode, `server-ip` cleared, our jar in `mods/`.
+- Start: `cd ~/fujiwara-local-server && ./run.sh nogui` (JDK 17 on PATH).
+- 16 Oct: all 96 mods + ours load on the real map; colony/start/stop work; spark median 5.8 ms/tick idle.
 
 ## Open questions (do not block work)
 - Red: are the 4 starter rules right (reveal_points, double_points, longer_timer, free_transfers)? Prices (leaderboard 10, transfer 10, kill log 20, rule 100) and coin per point are config.

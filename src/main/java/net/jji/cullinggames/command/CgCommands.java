@@ -71,7 +71,7 @@ public final class CgCommands {
                 .then(admin("stop").executes(c -> report(c, EventManager.stop(server(c)), "Event stopped."))
                         .then(Commands.argument("minutes", IntegerArgumentType.integer(1, 24 * 60))
                                 .executes(c -> report(c, EventManager.stopIn(server(c), IntegerArgumentType.getInteger(c, "minutes")),
-                                        "Event will end in " + IntegerArgumentType.getInteger(c, "minutes") + " minutes."))))
+                                        "Event will end in " + minutes(IntegerArgumentType.getInteger(c, "minutes")) + "."))))
                 .then(admin("pause").executes(c -> report(c, EventManager.pause(server(c)), "Event paused.")))
                 .then(admin("resume").executes(c -> report(c, EventManager.resume(server(c)), "Event resumed.")))
                 .then(admin("status").executes(CgCommands::status))
@@ -101,6 +101,10 @@ public final class CgCommands {
                 .then(Commands.literal("cashout").then(Commands.argument("points", IntegerArgumentType.integer(1, 1_000_000))
                         .executes(c -> shopResult(c, Shop.cashOut(server(c), c.getSource().getPlayerOrException(),
                                 IntegerArgumentType.getInteger(c, "points")))))));
+    }
+
+    private static String minutes(int n) {
+        return n + (n == 1 ? " minute" : " minutes");
     }
 
     /** Admin-only literal (permission level 2). */
