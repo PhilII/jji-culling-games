@@ -1,7 +1,9 @@
 package net.jji.cullinggames.event;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
@@ -22,6 +24,8 @@ public final class EventState extends SavedData {
     private long runningTicks;
     private int eventNumber;
     private final Set<UUID> participants = new LinkedHashSet<>();
+    /** Participant -> colony name. */
+    private final Map<UUID, String> colonyOf = new HashMap<>();
 
     public static EventState get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(EventState::load, EventState::new, DATA_NAME);
@@ -36,6 +40,14 @@ public final class EventState extends SavedData {
         s.eventNumber = tag.getInt("eventNumber");
         for (Tag t : tag.getList("participants", Tag.TAG_INT_ARRAY)) {
             s.participants.add(NbtUtils.loadUUID(t));
+        }
+        CompoundTag colonies = tag.getCompound("colonyOf");
+        for (String key : colonies.getAllKeys()) {
+            try {
+                s.colonyOf.put(UUID.fromString(key), colonies.getString(key));
+            } catch (IllegalArgumentException ignored) {
+                // skip malformed entry
+            }
         }
         return s;
     }
@@ -52,6 +64,9 @@ public final class EventState extends SavedData {
             list.add(NbtUtils.createUUID(id));
         }
         tag.put("participants", list);
+        CompoundTag colonies = new CompoundTag();
+        colonyOf.forEach((id, name) -> colonies.putString(id.toString(), name));
+        tag.put("colonyOf", colonies);
         return tag;
     }
 
@@ -72,6 +87,7 @@ public final class EventState extends SavedData {
         this.runningTicks = 0;
         this.eventNumber++;
         this.participants.clear();
+        this.colonyOf.clear();
         setDirty();
     }
 
@@ -83,6 +99,7 @@ public final class EventState extends SavedData {
     void end() {
         this.phase = EventPhase.IDLE;
         this.participants.clear();
+        this.colonyOf.clear();
         setDirty();
     }
 
@@ -103,13 +120,28 @@ public final class EventState extends SavedData {
 
     boolean removeParticipant(UUID id) {
         boolean removed = participants.remove(id);
+        colonyOf.remove(id);
         if (removed) {
             setDirty();
         }
         return removed;
     }
 
+    void assignColony(UUID id, String colony) {
+        colonyOf.put(id, colony);
+        setDirty();
+    }
+
     // --- reads ---
+
+    public String colonyOf(UUID id) {
+        return colonyOf.get(id);
+    }
+
+    /** Participants currently assigned to the named colony (case-insensitive). */
+    public long countIn(String colony) {
+        return colonyOf.values().stream().filter(colony::equalsIgnoreCase).count();
+    }
 
     public EventPhase phase() {
         return phase;

@@ -1,6 +1,13 @@
 package net.jji.cullinggames.event;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import net.jji.cullinggames.CullingGames;
+import net.jji.cullinggames.colony.Colony;
+import net.jji.cullinggames.colony.ColonyService;
+import net.jji.cullinggames.colony.ColonyStore;
 import net.jji.cullinggames.config.CgConfig;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,19 +20,26 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 public final class EventManager {
     private EventManager() {}
 
-    public enum Result { OK, ALREADY_RUNNING, NOT_ACTIVE, NOT_RUNNING, NOT_PAUSED }
+    public enum Result { OK, ALREADY_RUNNING, NOT_ACTIVE, NOT_RUNNING, NOT_PAUSED, NO_COLONIES }
 
     public static Result start(MinecraftServer server, PenaltyMode penalty) {
         EventState state = EventState.get(server);
         if (state.phase().isActive()) {
             return Result.ALREADY_RUNNING;
         }
+        ColonyStore colonies = ColonyStore.get(server);
+        if (colonies.isEmpty()) {
+            return Result.NO_COLONIES;
+        }
         state.begin(penalty, System.currentTimeMillis());
+        List<ServerPlayer> joining = new ArrayList<>();
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             if (isEligible(p)) {
                 state.addParticipant(p.getUUID());
+                joining.add(p);
             }
         }
+        spread(server, state, new ArrayList<>(colonies.all()), joining);
         CullingGames.LOGGER.info("Culling Games #{} started ({} participants, penalty {})",
                 state.eventNumber(), state.participants().size(), penalty);
         Kogane.broadcast(server, "The Culling Games have begun. Participants: " + state.participants().size() + ".");
@@ -66,7 +80,34 @@ public final class EventManager {
 
     public static boolean addParticipant(MinecraftServer server, ServerPlayer player) {
         EventState state = EventState.get(server);
-        return state.phase().isActive() && state.addParticipant(player.getUUID());
+        if (!state.phase().isActive() || !state.addParticipant(player.getUUID())) {
+            return false;
+        }
+        placeInEmptiestColony(server, state, player);
+        return true;
+    }
+
+    /** Spreads players evenly across colonies in random order, then teleports each into theirs. */
+    private static void spread(MinecraftServer server, EventState state, List<Colony> colonies, List<ServerPlayer> players) {
+        Collections.shuffle(players);
+        Collections.shuffle(colonies);
+        for (int i = 0; i < players.size(); i++) {
+            place(server, state, players.get(i), colonies.get(i % colonies.size()));
+        }
+    }
+
+    private static void placeInEmptiestColony(MinecraftServer server, EventState state, ServerPlayer player) {
+        ColonyStore colonies = ColonyStore.get(server);
+        colonies.all().stream()
+                .min(Comparator.comparingLong(c -> state.countIn(c.name())))
+                .ifPresent(c -> place(server, state, player, c));
+    }
+
+    /** Assign before teleporting, so the barrier allows the move into the colony's dimension. */
+    private static void place(MinecraftServer server, EventState state, ServerPlayer player, Colony colony) {
+        state.assignColony(player.getUUID(), colony.name());
+        ColonyService.teleportRandom(server, player, colony);
+        Kogane.tell(player, "You have been placed in colony " + colony.name() + ".");
     }
 
     public static boolean removeParticipant(MinecraftServer server, ServerPlayer player) {
@@ -108,6 +149,7 @@ public final class EventManager {
         } else if (CgConfig.ALLOW_LATE_JOIN.get() && isEligible(player)) {
             state.addParticipant(player.getUUID());
             Kogane.tell(player, "You have joined the Culling Games.");
+            placeInEmptiestColony(server, state, player);
         }
     }
 }

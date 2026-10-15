@@ -1,12 +1,16 @@
 package net.jji.cullinggames.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import java.time.Duration;
 import java.util.Arrays;
+import net.jji.cullinggames.colony.Colony;
+import net.jji.cullinggames.colony.ColonyService;
+import net.jji.cullinggames.colony.ColonyStore;
 import net.jji.cullinggames.config.CgConfig;
 import net.jji.cullinggames.event.EventManager;
 import net.jji.cullinggames.event.EventState;
@@ -15,6 +19,8 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.coordinates.ColumnPosArgument;
+import net.minecraft.server.level.ColumnPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,6 +49,7 @@ public final class CgCommands {
                 .then(Commands.literal("pause").executes(c -> report(c, EventManager.pause(server(c)), "Event paused.")))
                 .then(Commands.literal("resume").executes(c -> report(c, EventManager.resume(server(c)), "Event resumed.")))
                 .then(Commands.literal("status").executes(CgCommands::status))
+                .then(colonyCommands())
                 .then(Commands.literal("participant")
                         .then(Commands.literal("add").then(Commands.argument("player", EntityArgument.player())
                                 .executes(c -> participant(c, true))))
@@ -78,6 +85,7 @@ public final class CgCommands {
             case NOT_ACTIVE -> "No event is active.";
             case NOT_RUNNING -> "The event is not running.";
             case NOT_PAUSED -> "The event is not paused.";
+            case NO_COLONIES -> "No colonies set up. Add one with /cg colony add first.";
             default -> "Failed.";
         };
         c.getSource().sendFailure(Component.literal(why));
@@ -109,5 +117,100 @@ public final class CgCommands {
         }
         c.getSource().sendFailure(Component.literal(add ? "No active event, or " + name + " is already in it." : name + " is not a participant."));
         return 0;
+    }
+
+    // --- colonies ---
+
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> colonyCommands() {
+        return Commands.literal("colony")
+                .then(Commands.literal("add").then(Commands.argument("name", StringArgumentType.word())
+                        .then(Commands.literal("circle").then(Commands.argument("center", ColumnPosArgument.columnPos())
+                                .then(Commands.argument("radius", IntegerArgumentType.integer(3, 5000))
+                                        .executes(CgCommands::addCircle))))
+                        .then(Commands.literal("box").then(Commands.argument("from", ColumnPosArgument.columnPos())
+                                .then(Commands.argument("to", ColumnPosArgument.columnPos())
+                                        .executes(CgCommands::addBox))))))
+                .then(Commands.literal("remove").then(colonyName().executes(CgCommands::removeColony)))
+                .then(Commands.literal("list").executes(CgCommands::listColonies))
+                .then(Commands.literal("tp").then(colonyName().executes(CgCommands::tpColony)));
+    }
+
+    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> colonyName() {
+        return Commands.argument("name", StringArgumentType.word())
+                .suggests((c, b) -> SharedSuggestionProvider.suggest(
+                        ColonyStore.get(c.getSource().getServer()).all().stream().map(Colony::name), b));
+    }
+
+    private static int addCircle(CommandContext<CommandSourceStack> c) {
+        ColumnPos center = ColumnPosArgument.getColumnPos(c, "center");
+        Colony colony = Colony.circle(StringArgumentType.getString(c, "name"), c.getSource().getLevel().dimension(),
+                center.x(), center.z(), IntegerArgumentType.getInteger(c, "radius"));
+        return addColony(c, colony);
+    }
+
+    private static int addBox(CommandContext<CommandSourceStack> c) {
+        ColumnPos from = ColumnPosArgument.getColumnPos(c, "from");
+        ColumnPos to = ColumnPosArgument.getColumnPos(c, "to");
+        if (Math.abs(from.x() - to.x()) < 4 || Math.abs(from.z() - to.z()) < 4) {
+            c.getSource().sendFailure(Component.literal("A box colony must be at least 5x5 blocks."));
+            return 0;
+        }
+        Colony colony = Colony.box(StringArgumentType.getString(c, "name"), c.getSource().getLevel().dimension(),
+                from.x(), from.z(), to.x(), to.z());
+        return addColony(c, colony);
+    }
+
+    private static int addColony(CommandContext<CommandSourceStack> c, Colony colony) {
+        if (!ColonyStore.get(server(c)).add(colony)) {
+            c.getSource().sendFailure(Component.literal("A colony named " + colony.name() + " already exists."));
+            return 0;
+        }
+        c.getSource().sendSuccess(() -> Component.literal("Added colony " + colony.describe() + "."), true);
+        return 1;
+    }
+
+    private static int removeColony(CommandContext<CommandSourceStack> c) {
+        String name = StringArgumentType.getString(c, "name");
+        if (EventState.get(server(c)).phase().isActive()) {
+            c.getSource().sendFailure(Component.literal("Stop the event before removing colonies."));
+            return 0;
+        }
+        if (!ColonyStore.get(server(c)).remove(name)) {
+            c.getSource().sendFailure(Component.literal("No colony named " + name + "."));
+            return 0;
+        }
+        c.getSource().sendSuccess(() -> Component.literal("Removed colony " + name + "."), true);
+        return 1;
+    }
+
+    private static int listColonies(CommandContext<CommandSourceStack> c) {
+        ColonyStore store = ColonyStore.get(server(c));
+        if (store.isEmpty()) {
+            c.getSource().sendSuccess(() -> Component.literal("No colonies set up."), false);
+            return 0;
+        }
+        EventState state = EventState.get(server(c));
+        StringBuilder sb = new StringBuilder("Colonies:");
+        for (Colony colony : store.all()) {
+            sb.append("\n - ").append(colony.describe());
+            if (state.phase().isActive()) {
+                sb.append(" | ").append(state.countIn(colony.name())).append(" players");
+            }
+        }
+        String text = sb.toString();
+        c.getSource().sendSuccess(() -> Component.literal(text), false);
+        return store.all().size();
+    }
+
+    private static int tpColony(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        String name = StringArgumentType.getString(c, "name");
+        Colony colony = ColonyStore.get(server(c)).get(name);
+        if (colony == null) {
+            c.getSource().sendFailure(Component.literal("No colony named " + name + "."));
+            return 0;
+        }
+        ServerPlayer player = c.getSource().getPlayerOrException();
+        ColonyService.teleportRandom(server(c), player, colony);
+        return 1;
     }
 }

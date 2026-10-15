@@ -13,8 +13,8 @@ This file is the source of truth for the build. Every session starts by reading 
 |---|---|---|---|---|
 | 0 | Repo + project setup | done | `setup/forge-mdk` | `v0.0-setup` |
 | 1 | Event skeleton | done | `step1/event-core` | `v0.1-event-core` |
-| 2 | Colonies + barrier | next | `step2/colonies` | `v0.2-colonies` |
-| 3 | Points + kill log | not started | `step3/points` | `v0.3-points` |
+| 2 | Colonies + barrier | done | `step2/colonies` | `v0.2-colonies` |
+| 3 | Points + kill log | next | `step3/points` | `v0.3-points` |
 | 4 | Timer + penalty + event lives | not started | `step4/penalty` | `v0.4-penalty` |
 | 5 | Kogane + shop | not started | `step5/kogane-shop` | `v0.5-kogane-shop` |
 | 6 | Client HUD + screens | not started | `step6/client` | `v0.6-client` |
@@ -118,3 +118,8 @@ Goal: a jar the server can run in a real event.
 ## Local test server
 - `run/` is git-ignored. EULA accepted by PhilL for local testing (16 Oct). RCON on 127.0.0.1:25575, password in `run/server.properties`.
 - `./gradlew runServer`, then send commands over RCON. Console commands run as permission level 4.
+
+## Automated tests
+- `./gradlew runGameTestServer` runs all GameTests (namespace `cullinggames`) and exits non-zero on failure. Run it before every PR.
+- Tests use the `cullinggames:empty` structure template. Don't use `GameTestHelper.makeMockServerPlayerInLevel()` (crashes on Forge 1.20.1); use the EmbeddedChannel test player in `ColonyGameTests`.
+- Tests that touch global state (event, colonies) go in their own `batch` so they never run at the same time.
