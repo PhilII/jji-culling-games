@@ -30,6 +30,10 @@ def keyed(name, despill=False):
         color[..., 0] -= spill
         color[..., 2] -= spill
         alpha = alpha * (1 - spill / 255)
+    # Unmixing takes red and blue out of soft edge pixels, which leaves them green (a green outline on dark
+    # backgrounds). No art here has green at its outer edge, so edge pixels get no more green than red/blue.
+    edge = (alpha > 0) & (alpha < 1)
+    color[..., 1] = np.where(edge, np.minimum(color[..., 1], np.maximum(color[..., 0], color[..., 2])), color[..., 1])
     color[alpha == 0] = 0
     out = np.dstack([color, alpha * 255]).astype(np.uint8)
     return Image.fromarray(out)
@@ -52,6 +56,12 @@ def square(img):
 
 def save(img, path):
     path.parent.mkdir(parents=True, exist_ok=True)
+    if img.mode == "RGBA":
+        # Resizing makes new soft edge pixels; keep them free of green as in keyed().
+        a = np.asarray(img).astype(int)
+        edge = (a[..., 3] > 0) & (a[..., 3] < 255)
+        a[..., 1] = np.where(edge, np.minimum(a[..., 1], np.maximum(a[..., 0], a[..., 2])), a[..., 1])
+        img = Image.fromarray(a.astype(np.uint8))
     img.save(path, optimize=True)
     print(f"{path.relative_to(RES)}  {img.width}x{img.height}")
 
