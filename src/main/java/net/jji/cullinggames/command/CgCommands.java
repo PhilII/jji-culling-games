@@ -18,6 +18,7 @@ import net.jji.cullinggames.colony.Colony;
 import net.jji.cullinggames.colony.ColonyService;
 import net.jji.cullinggames.colony.ColonyStore;
 import net.jji.cullinggames.config.CgConfig;
+import net.jji.cullinggames.event.CanonRules;
 import net.jji.cullinggames.event.EventManager;
 import net.jji.cullinggames.event.EventRule;
 import net.jji.cullinggames.event.EventState;
@@ -101,9 +102,9 @@ public final class CgCommands {
                         .then(Commands.argument("amount", IntegerArgumentType.integer(1, 1_000_000))
                                 .executes(CgCommands::transfer))))
                 .then(Commands.literal("leaderboard").executes(CgCommands::leaderboard))
-                .then(Commands.literal("cashout").then(Commands.argument("points", IntegerArgumentType.integer(1, 1_000_000))
+                .then(Commands.literal("cashout").then(Commands.argument("coins", IntegerArgumentType.integer(1, 1_000_000))
                         .executes(c -> shopResult(c, Shop.cashOut(server(c), c.getSource().getPlayerOrException(),
-                                IntegerArgumentType.getInteger(c, "points")))))));
+                                IntegerArgumentType.getInteger(c, "coins")))))));
     }
 
     private static String minutes(int n) {
@@ -400,7 +401,7 @@ public final class CgCommands {
             ItemStack s = items.get(i).stack();
             msg.append(buyLine("#" + (i + 1) + " " + s.getCount() + "x " + s.getHoverName().getString(), items.get(i).price(), Integer.toString(i + 1)));
         }
-        msg.append(Component.literal("\n Add a rule: /cg rules (" + CgConfig.RULE_COST.get() + " pts). Cash out: /cg cashout <points>.")
+        msg.append(Component.literal("\n Add a rule: /cg rules (" + CgConfig.RULE_COST.get() + " pts). Cash out: /cg cashout <coins> (" + CgConfig.POINTS_PER_COIN.get() + " pts each).")
                 .withStyle(ChatFormatting.GRAY));
         c.getSource().sendSuccess(() -> msg, false);
         return 1;
@@ -456,7 +457,13 @@ public final class CgCommands {
 
     private static int listRules(CommandContext<CommandSourceStack> c) {
         EventState state = EventState.get(server(c));
-        MutableComponent msg = Kogane.line("Rules cost " + CgConfig.RULE_COST.get() + " points. Click to add.").copy();
+        MutableComponent msg = Kogane.line("The Culling Game rules:").copy();
+        for (int i = 0; i < CanonRules.RULES.size(); i++) {
+            msg.append(Component.literal("\n " + (i + 1) + ". " + CanonRules.RULES.get(i)).withStyle(ChatFormatting.GRAY));
+        }
+        msg.append(Component.literal("\n " + CanonRules.SERVER_NOTE).withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+        msg.append(Component.literal("\n New rules cost " + CgConfig.RULE_COST.get() + " points and continue from 9. Click to add:")
+                .withStyle(ChatFormatting.YELLOW));
         for (EventRule r : EventRule.values()) {
             boolean active = state.hasRule(r.id());
             msg.append(Component.literal("\n " + (active ? "[in play] " : "") + r.id() + ": " + r.description())
@@ -508,7 +515,7 @@ public final class CgCommands {
         {"/cg transfer <player> <amount>", "send points (buy transfer first)"},
         {"/cg leaderboard", "standings (buy it first)"},
         {"/cg killlog", "kill log (buy it first)"},
-        {"/cg cashout <points>", "points to coins"},
+        {"/cg cashout <coins>", "points to coins"},
         {"/cg rewards", "Kogane's reward shop after the event"},
     };
 

@@ -3,6 +3,7 @@ package net.jji.cullinggames.event;
 import net.jji.cullinggames.CullingGames;
 import net.jji.cullinggames.colony.Colony;
 import net.jji.cullinggames.colony.ColonyStore;
+import net.jji.cullinggames.config.CgConfig;
 import net.jji.cullinggames.shop.RewardStore;
 import net.jji.cullinggames.shop.RewardStore.Reward;
 import net.jji.cullinggames.shop.RewardStore.Type;
@@ -96,6 +97,14 @@ public final class RewardGameTests {
             // someone who wasn't in the event
             p3 = TestPlayers.create(h, "gt_r3");
             check(h, !Rewards.buy(server, p3, "gt_apple").ok(), "no points, no rewards");
+
+            // default prices follow the config until an admin sets one
+            Reward cfg = new Reward("gt_cfg", Type.ITEM, "Cfg", new ItemStack(Items.STICK), "", 1).priceFromConfig("fragment");
+            int oldPrice = CgConfig.FRAGMENT_PRICE.get();
+            CgConfig.FRAGMENT_PRICE.set(37);
+            check(h, cfg.price() == 37, "price follows config");
+            CgConfig.FRAGMENT_PRICE.set(oldPrice);
+            check(h, cfg.price(5).price() == 5, "set price overrides config");
 
             // the next event wipes leftover points and closes the shop for them
             EventManager.start(server, PenaltyMode.SEAL_CT, 3);

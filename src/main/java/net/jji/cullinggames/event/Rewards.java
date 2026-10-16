@@ -217,7 +217,7 @@ public final class Rewards {
             Reward special = new Reward("special_grade", Type.COMMAND, "Special Grade promotion",
                     new ItemStack(icon != null ? icon : Items.NETHER_STAR),
                     "advancement grant %player% only " + SPECIAL_GRADE, 220)
-                    .once(true).requires(GRADE_1).blockedBy(SPECIAL_GRADE);
+                    .once(true).requires(GRADE_1).blockedBy(SPECIAL_GRADE).priceFromConfig("specialGrade");
             added += store.add(special) ? 1 : 0;
         }
         // Item names come from client-side lang files, so the server names them here.
@@ -237,7 +237,7 @@ public final class Rewards {
             }
             ItemStack stack = new ItemStack(weapon);
             Reward fragment = new Reward("frag_" + w[0], Type.FRAGMENT, w[2] + " fragment", stack, "", 60)
-                    .fragmentsNeeded(Integer.parseInt(w[1]));
+                    .fragmentsNeeded(Integer.parseInt(w[1])).priceFromConfig("fragment");
             added += store.add(fragment) ? 1 : 0;
         }
         return added;

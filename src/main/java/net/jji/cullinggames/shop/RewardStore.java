@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import net.jji.cullinggames.config.CgConfig;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -51,6 +52,8 @@ public final class RewardStore extends SavedData {
         /** Advancement id that makes the reward pointless (already has it), or "". */
         private String blockedBy;
         private int fragmentsNeeded;
+        /** "specialGrade" or "fragment": the price follows that config value until an admin sets a price. */
+        private String priceKey = "";
 
         public Reward(String id, Type type, String name, ItemStack stack, String command, int price) {
             this.id = id;
@@ -69,7 +72,13 @@ public final class RewardStore extends SavedData {
         public String name() { return name; }
         public ItemStack stack() { return stack; }
         public String command() { return command; }
-        public int price() { return price; }
+        public int price() {
+            return switch (priceKey) {
+                case "specialGrade" -> CgConfig.SPECIAL_GRADE_PRICE.get();
+                case "fragment" -> CgConfig.FRAGMENT_PRICE.get();
+                default -> price;
+            };
+        }
         public int stock() { return stock; }
         public int perPlayer() { return perPlayer; }
         public boolean once() { return once; }
@@ -80,7 +89,9 @@ public final class RewardStore extends SavedData {
         public Reward name(String v) { name = v; return this; }
         public Reward stack(ItemStack v) { stack = v.copy(); return this; }
         public Reward command(String v) { command = v; return this; }
-        public Reward price(int v) { price = v; return this; }
+        /** A fixed price; stops following the config. */
+        public Reward price(int v) { price = v; priceKey = ""; return this; }
+        public Reward priceFromConfig(String key) { priceKey = key; return this; }
         public Reward stock(int v) { stock = v; return this; }
         public Reward perPlayer(int v) { perPlayer = v; return this; }
         public Reward once(boolean v) { once = v; return this; }
@@ -107,6 +118,7 @@ public final class RewardStore extends SavedData {
             t.putString("requires", requires);
             t.putString("blockedBy", blockedBy);
             t.putInt("fragmentsNeeded", fragmentsNeeded);
+            t.putString("priceKey", priceKey);
             return t;
         }
 
@@ -121,7 +133,8 @@ public final class RewardStore extends SavedData {
                     t.getString("command"), t.getInt("price"))
                     .stock(t.getInt("stock")).perPlayer(t.getInt("perPlayer")).once(t.getBoolean("once"))
                     .requires(t.getString("requires")).blockedBy(t.getString("blockedBy"))
-                    .fragmentsNeeded(t.getInt("fragmentsNeeded"));
+                    .fragmentsNeeded(t.getInt("fragmentsNeeded"))
+                    .priceFromConfig(t.getString("priceKey"));
         }
     }
 
@@ -131,6 +144,7 @@ public final class RewardStore extends SavedData {
     private int ledgerEvent;
     private final Map<UUID, Map<String, Integer>> boughtThisEvent = new HashMap<>();
     private final Map<String, Integer> soldThisEvent = new HashMap<>();
+    private final Map<UUID, Integer> coinsThisEvent = new HashMap<>();
     private final Map<UUID, Set<String>> boughtEver = new HashMap<>();
     /** Player → weapon item id → fragments held. */
     private final Map<UUID, Map<String, Integer>> fragments = new HashMap<>();
@@ -155,6 +169,10 @@ public final class RewardStore extends SavedData {
         CompoundTag sold = tag.getCompound("soldThisEvent");
         for (String k : sold.getAllKeys()) {
             s.soldThisEvent.put(k, sold.getInt(k));
+        }
+        CompoundTag coins = tag.getCompound("coinsThisEvent");
+        for (String k : coins.getAllKeys()) {
+            s.coinsThisEvent.put(UUID.fromString(k), coins.getInt(k));
         }
         CompoundTag ever = tag.getCompound("boughtEver");
         for (String k : ever.getAllKeys()) {
@@ -211,6 +229,9 @@ public final class RewardStore extends SavedData {
         CompoundTag sold = new CompoundTag();
         soldThisEvent.forEach(sold::putInt);
         tag.put("soldThisEvent", sold);
+        CompoundTag coins = new CompoundTag();
+        coinsThisEvent.forEach((id, n) -> coins.putInt(id.toString(), n));
+        tag.put("coinsThisEvent", coins);
         CompoundTag ever = new CompoundTag();
         boughtEver.forEach((id, ids) -> {
             ListTag l = new ListTag();
@@ -284,6 +305,7 @@ public final class RewardStore extends SavedData {
             ledgerEvent = eventNumber;
             boughtThisEvent.clear();
             soldThisEvent.clear();
+            coinsThisEvent.clear();
             setDirty();
         }
     }
@@ -316,6 +338,15 @@ public final class RewardStore extends SavedData {
         boughtThisEvent.computeIfAbsent(player, k -> new HashMap<>()).merge(rewardId, 1, Integer::sum);
         soldThisEvent.merge(rewardId, 1, Integer::sum);
         boughtEver.computeIfAbsent(player, k -> new HashSet<>()).add(rewardId);
+        setDirty();
+    }
+
+    public int coinsThisEvent(UUID player) {
+        return coinsThisEvent.getOrDefault(player, 0);
+    }
+
+    public void addCoins(UUID player, int coins) {
+        coinsThisEvent.merge(player, coins, Integer::sum);
         setDirty();
     }
 
