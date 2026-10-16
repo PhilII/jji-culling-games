@@ -19,7 +19,7 @@ This file is the source of truth for the build. Every session starts by reading 
 | 4 | Timer + penalty + event lives | done | `step4/penalty` | `v0.4-penalty` |
 | 5 | Kogane + shop | done | `step5/kogane-shop` | `v0.5-kogane-shop` |
 | 6 | Client HUD + screens | done | `step6/client` | `v0.6-client` |
-| 7 | Polish + release | in progress (release waits for Red) | `step7/release` | `v1.0.0` |
+| 7 | Polish + release | in progress (0.7.0 pre-release on GitHub; Red decides about the server) | `step7/release` | `v1.0.0` |
 
 ## Decided
 
@@ -95,7 +95,7 @@ Goal: a jar the server can run in a real event.
 - End rewards (if Red wants them).
 - Remaining admin commands, help text, permissions review.
 - Performance check with spark on the dev server.
-- Test with the full JJI modpack, then upload to ServerMiner (ask PhilL before upload).
+- Test with the full JJI modpack, then publish the jar as a GitHub release. **We never upload to ServerMiner**: Red downloads the jar and decides whether and when it goes on the server.
 - Later: publish on CurseForge when the team is happy.
 - **Done when**: one full test event runs start to finish on the real modpack.
 
@@ -119,6 +119,7 @@ Goal: a jar the server can run in a real event.
 - After each merged step: tag the merge commit (`v0.N-name`) and push the tag. These tags are the checkpoints to go back to.
 - Update the status table in this file in the same PR that finishes a step.
 - Never commit secrets, server files, world data or other mods' jars.
+- Releases are GitHub releases with the jar attached. Nothing is ever uploaded to the game server from here (FTP is download-only).
 
 ## Build
 - JDK 17 (Homebrew): `export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
