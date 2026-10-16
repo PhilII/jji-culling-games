@@ -95,9 +95,9 @@ Goal: players see what matters without commands.
 ### Step 7 — Polish + release
 Goal: a jar the server can run in a real event.
 - End rewards (if Red wants them).
-- Remaining admin commands, help text, permissions review.
+- Remaining admin commands, help text, permissions review. Done 17 Oct: admin commands need op level 2, player commands none; help covers rewards and cash-out.
 - Admin guide for Red: `ADMIN_GUIDE.md` (install, colonies, shop, running an event, settings). Done 16 Oct.
-- Performance check with spark on the dev server.
+- Performance check with spark on the dev server. Done without players on the full modpack (17 Oct, see test server notes); repeat during the playtest.
 - Test with the full JJI modpack, then publish the jar as a GitHub release. **We never upload to ServerMiner**: Red downloads the jar and decides whether and when it goes on the server.
 - Later: publish on CurseForge when the team is happy.
 - **Done when**: one full test event runs start to finish on the real modpack.
@@ -126,6 +126,7 @@ Not covered yet: which weapon effects JJC supports (no answer; Red can add them 
 - `~/fujiwara-local-server` (outside iCloud on purpose: Desktop/Documents files are iCloud placeholders and very slow to read). Full FTP mirror of the server incl. the map, Forge 47.4.10 installed, port 25567, RCON 25576, offline mode, `server-ip` cleared, our jar in `mods/`.
 - Start: `cd ~/fujiwara-local-server && ./run.sh nogui` (JDK 17 on PATH).
 - 16 Oct: all 96 mods + ours load on the real map; colony/start/stop work; spark median 5.8 ms/tick idle.
+- 17 Oct (0.12.0): loads without errors from our mod (config file gains the new keys automatically); default rewards seeded with the real JJC v51; `jujutsuUpgradeDifficulty` = 2. One-minute event with no players: 20 TPS, median 2.4 ms/tick, 917 MB / 4 GB. **Still needs players**: per-player load (barrier, timer, HUD, barrier walls), PvP kill points and real Lightman coin cash-out. A dev client can't join this server (mod list differs), so this waits for the playtest.
 
 ## Open questions (do not block work)
 - Red: final OK on scope. End rewards answered 16 Oct (see step 7b); full reward list and prices still his call.
