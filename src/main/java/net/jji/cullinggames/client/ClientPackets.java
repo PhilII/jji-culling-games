@@ -23,6 +23,7 @@ public final class ClientPackets {
             screen.update(msg);
         } else {
             mc.setScreen(new ShopScreen(msg));
+            CgSounds.play("shop");
         }
     }
 

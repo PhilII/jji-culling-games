@@ -19,7 +19,7 @@ This file is the source of truth for the build. Every session starts by reading 
 | 4 | Timer + penalty + event lives | done | `step4/penalty` | `v0.4-penalty` |
 | 5 | Kogane + shop | done | `step5/kogane-shop` | `v0.5-kogane-shop` |
 | 6 | Client HUD + screens | done | `step6/client` | `v0.6-client` |
-| 7 | Polish + release | in progress (0.8.0 pre-release on GitHub with JJK art; Red decides about the server) | `step7/release` | `v1.0.0` |
+| 7 | Polish + release | in progress (0.9.0 pre-release on GitHub with JJK art and sounds; Red decides about the server) | `step7/release` | `v1.0.0` |
 
 ## Decided
 
@@ -28,7 +28,7 @@ This file is the source of truth for the build. Every session starts by reading 
 - **Penalty** (BigMann's idea): if your points don't change within the timer (default 19 min), the admin-chosen penalty applies per event: CT sealed until your points change again (default), or lose an event life. Any sealed CT is restored when the event ends.
 - **Lives**: event deaths do not cost real server lives. Admins set event lives.
 - **Kogane shop**: admins stock it. Points convert to Lightman's money, never the other way.
-- **Art**: JJK look (PhilL, 16 Oct). Images made in ChatGPT on a flat magenta background; originals in `~/culling-games-assets/originals/` (outside the repo), turned into textures by `scripts/process_art.py`. 0.8.0 has: Kogane sprite (3 expressions), HUD icons, shop as Kogane with its green-screen menu open, 死滅回游 title card at start/end, talisman banner "Rule 9 added" (bought rules continue from the original 8), barrier veil icon, mod logo. Sounds are still vanilla placeholders.
+- **Art**: JJK look (PhilL, 16 Oct). Images made in ChatGPT on a flat magenta background; originals in `~/culling-games-assets/originals/` (outside the repo), turned into textures by `scripts/process_art.py`. 0.8.0 has: Kogane sprite (3 expressions), HUD icons, shop as Kogane with its green-screen menu open, 死滅回游 title card at start/end, talisman banner "Rule 9 added" (bought rules continue from the original 8), barrier veil icon, mod logo. 0.9.0 adds 12 custom sounds (original, synthesized by Codex from scratch, free to redistribute; see `docs/sound-credits.txt`), played client-side only so players without the mod still join and hear vanilla cues.
 - **Shop service prices** (final ruling relayed by PhilL, 16 Oct; BigMann's idea): leaderboard, transfers and kill log cost 100 points each, like rules.
 - **Kill reward** (PhilL, 16 Oct): Kogane gives 5 and the killer takes 5 from the victim by default (victim loses them, never below 0, their timer is not reset). Mode FLAT / PERCENT / NONE and amounts are config values, changeable in the file or in game with `/cg config`.
 - **How the CT seal works** (tested 16 Oct): the seal drains cursed energy to 0 every tick and gives the saved amount back on unseal. Jujutsu Craft's CT fields are never written. Reason: JJC treats CT 0 as "re-roll a random CT on respawn" and CT -1 as "non-sorcerer" (and can grant advancements on respawn), and Alm ownership / ReBalanced key off the CT, so changing it risks losing unique CTs.

@@ -124,7 +124,7 @@ public final class Penalties {
                     player.getGameProfile().getName());
         }
         Kogane.tell(player, "Your points did not change in time. Your cursed technique is sealed until you score.");
-        Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "Technique sealed!", "Your points did not change. Score to unseal.");
+        Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "Technique sealed!", "Your points did not change. Score to unseal.", "seal");
         Kogane.cue(player, Kogane.Cue.PENALTY);
     }
 
@@ -174,13 +174,13 @@ public final class Penalties {
         int left = state.loseLife(player.getUUID());
         if (left > 0) {
             Kogane.tell(player, left + (left == 1 ? " life" : " lives") + " left.");
-            Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "Life lost!", left + (left == 1 ? " life" : " lives") + " left.");
+            Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "Life lost!", left + (left == 1 ? " life" : " lives") + " left.", "life_lost");
             Kogane.cue(player, Kogane.Cue.PENALTY);
             return;
         }
         Kogane.broadcast(server, player.getGameProfile().getName() + " is out of the Culling Games.");
         Kogane.cue(player, Kogane.Cue.OUT);
-        Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "You are out!", "You can watch until the games end.");
+        Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "You are out!", "You can watch until the games end.", "out");
         state.rememberGameMode(player.getUUID(), player.gameMode.getGameModeForPlayer().getName());
         unseal(server, state, player.getUUID(), false);
         if (alive) {

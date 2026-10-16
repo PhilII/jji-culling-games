@@ -9,10 +9,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraftforge.client.gui.overlay.ForgeGui;
@@ -60,33 +57,41 @@ public final class AnnouncementOverlay implements IGuiOverlay {
 
     static void show(AnnouncePacket msg) {
         long now = Util.getMillis();
+        String sound = msg.sound().isEmpty() ? defaultSound(msg.kind()) : msg.sound();
         switch (msg.kind()) {
             case START, END -> {
                 title = new Shown(msg, now, TITLE_MS);
                 popup = new Shown(msg, now + 600, POPUP_MS);
-                play(SoundEvents.BELL_BLOCK, msg.kind() == Kind.START ? 0.5f : 0.7f);
             }
-            case RULE -> {
-                banner = new Shown(msg, now, BANNER_MS);
-                play(SoundEvents.BELL_BLOCK, 1.0f);
-            }
+            case RULE -> banner = new Shown(msg, now, BANNER_MS);
             case BARRIER -> {
                 boolean fresh = barrier == null || barrier.over();
                 barrier = new Shown(msg, fresh ? now : barrier.since(), fresh ? BARRIER_MS : now - barrier.since() + BARRIER_MS);
-                if (fresh) {
-                    play(SoundEvents.BEACON_DEACTIVATE, 0.6f);
+                if (!fresh) {
+                    return; // still showing: no new sound while the player keeps pushing
                 }
             }
+            case SOUND -> { }
             default -> popup = new Shown(msg, now, POPUP_MS);
         }
+        CgSounds.play(sound);
+    }
+
+    private static String defaultSound(Kind kind) {
+        return switch (kind) {
+            case START -> "start";
+            case END -> "end";
+            case RULE -> "rule";
+            case WARNING -> "warning";
+            case GOOD -> "unseal";
+            case BARRIER -> "barrier";
+            case INFO, PENALTY -> "kogane";
+            case SOUND -> "";
+        };
     }
 
     static void clear() {
         title = banner = popup = barrier = null;
-    }
-
-    private static void play(SoundEvent sound, float pitch) {
-        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch, 0.8f));
     }
 
     @Override

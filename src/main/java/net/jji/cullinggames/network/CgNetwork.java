@@ -18,7 +18,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
  * (they get chat and the bossbar instead of the HUD and screen).
  */
 public final class CgNetwork {
-    private static final String PROTOCOL = "2";
+    private static final String PROTOCOL = "3";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             ResourceLocation.fromNamespaceAndPath(CullingGames.MOD_ID, "main"), () -> PROTOCOL,
             NetworkRegistry.acceptMissingOr(PROTOCOL), NetworkRegistry.acceptMissingOr(PROTOCOL));

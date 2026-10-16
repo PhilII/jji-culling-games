@@ -11,7 +11,10 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 
-/** Kogane's voice: chat lines and placeholder sounds (vanilla sounds until custom ones exist). */
+/**
+ * Kogane's voice: chat lines, on-screen announcements and sounds. Players with the mod hear the mod's own sounds
+ * (played by their client from the announcement); players without it get vanilla sound cues.
+ */
 public final class Kogane {
     private Kogane() {}
 
@@ -33,9 +36,19 @@ public final class Kogane {
 
     /** On-screen announcement for players with the mod. Chat messages are sent separately and still reach everyone. */
     public static void announce(ServerPlayer player, AnnouncePacket.Kind kind, String title, String text) {
+        announce(player, kind, title, text, "");
+    }
+
+    /** @param sound a sound in assets/cullinggames/sounds, or "" for the kind's default */
+    public static void announce(ServerPlayer player, AnnouncePacket.Kind kind, String title, String text, String sound) {
         if (CgNetwork.hasMod(player)) {
-            CgNetwork.send(player, new AnnouncePacket(kind, title, text));
+            CgNetwork.send(player, new AnnouncePacket(kind, title, text, sound));
         }
+    }
+
+    /** Plays one of the mod's sounds for a player with the mod. */
+    public static void sound(ServerPlayer player, String sound) {
+        announce(player, AnnouncePacket.Kind.SOUND, "", "", sound);
     }
 
     public static void announceAll(MinecraftServer server, AnnouncePacket.Kind kind, String title, String text) {
@@ -59,8 +72,11 @@ public final class Kogane {
         }
     }
 
-    /** Plays a sound only this player hears. */
+    /** Vanilla sound only this player hears. Skipped for players with the mod: their announcement carries the sound. */
     public static void cue(ServerPlayer player, Cue cue) {
+        if (CgNetwork.hasMod(player)) {
+            return;
+        }
         player.playNotifySound(cue.sound, SoundSource.MASTER, 0.8f, cue.pitch);
     }
 }

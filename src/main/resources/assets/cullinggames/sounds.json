@@ -1,0 +1,98 @@
+{
+  "start": {
+    "subtitle": "subtitles.cullinggames.start",
+    "sounds": [
+      {
+        "name": "cullinggames:start"
+      }
+    ]
+  },
+  "end": {
+    "subtitle": "subtitles.cullinggames.end",
+    "sounds": [
+      {
+        "name": "cullinggames:end"
+      }
+    ]
+  },
+  "rule": {
+    "subtitle": "subtitles.cullinggames.rule",
+    "sounds": [
+      {
+        "name": "cullinggames:rule"
+      }
+    ]
+  },
+  "kogane": {
+    "subtitle": "subtitles.cullinggames.kogane",
+    "sounds": [
+      {
+        "name": "cullinggames:kogane"
+      }
+    ]
+  },
+  "warning": {
+    "subtitle": "subtitles.cullinggames.warning",
+    "sounds": [
+      {
+        "name": "cullinggames:warning"
+      }
+    ]
+  },
+  "seal": {
+    "subtitle": "subtitles.cullinggames.seal",
+    "sounds": [
+      {
+        "name": "cullinggames:seal"
+      }
+    ]
+  },
+  "unseal": {
+    "subtitle": "subtitles.cullinggames.unseal",
+    "sounds": [
+      {
+        "name": "cullinggames:unseal"
+      }
+    ]
+  },
+  "life_lost": {
+    "subtitle": "subtitles.cullinggames.life_lost",
+    "sounds": [
+      {
+        "name": "cullinggames:life_lost"
+      }
+    ]
+  },
+  "out": {
+    "subtitle": "subtitles.cullinggames.out",
+    "sounds": [
+      {
+        "name": "cullinggames:out"
+      }
+    ]
+  },
+  "barrier": {
+    "subtitle": "subtitles.cullinggames.barrier",
+    "sounds": [
+      {
+        "name": "cullinggames:barrier"
+      }
+    ]
+  },
+  "points": {
+    "subtitle": "subtitles.cullinggames.points",
+    "sounds": [
+      {
+        "name": "cullinggames:points"
+      }
+    ]
+  },
+  "shop": {
+    "subtitle": "subtitles.cullinggames.shop",
+    "sounds": [
+      {
+        "name": "cullinggames:shop"
+      }
+    ]
+  }
+}

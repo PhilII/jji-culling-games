@@ -1,4 +1,16 @@
 {
   "key.categories.cullinggames": "Culling Games",
-  "key.cullinggames.shop": "Open Kogane's shop"
+  "key.cullinggames.shop": "Open Kogane's shop",
+  "subtitles.cullinggames.start": "Culling Games begin",
+  "subtitles.cullinggames.end": "Culling Games end",
+  "subtitles.cullinggames.rule": "Rule added",
+  "subtitles.cullinggames.kogane": "Kogane appears",
+  "subtitles.cullinggames.warning": "Kogane warns",
+  "subtitles.cullinggames.seal": "Technique sealed",
+  "subtitles.cullinggames.unseal": "Technique unsealed",
+  "subtitles.cullinggames.life_lost": "Life lost",
+  "subtitles.cullinggames.out": "Player out",
+  "subtitles.cullinggames.barrier": "Barrier blocks",
+  "subtitles.cullinggames.points": "Points earned",
+  "subtitles.cullinggames.shop": "Kogane's shop opens"
 }
