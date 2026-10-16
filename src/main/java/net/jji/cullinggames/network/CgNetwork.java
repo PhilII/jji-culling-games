@@ -18,7 +18,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
  * (they get chat and the bossbar instead of the HUD and screen).
  */
 public final class CgNetwork {
-    private static final String PROTOCOL = "1";
+    private static final String PROTOCOL = "2";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             ResourceLocation.fromNamespaceAndPath(CullingGames.MOD_ID, "main"), () -> PROTOCOL,
             NetworkRegistry.acceptMissingOr(PROTOCOL), NetworkRegistry.acceptMissingOr(PROTOCOL));
@@ -36,6 +36,9 @@ public final class CgNetwork {
         CHANNEL.messageBuilder(ShopActionPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
                 .encoder(ShopActionPacket::encode).decoder(ShopActionPacket::decode)
                 .consumerMainThread(CgNetwork::onAction).add();
+        CHANNEL.messageBuilder(AnnouncePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(AnnouncePacket::encode).decoder(AnnouncePacket::decode)
+                .consumerMainThread(CgNetwork::onAnnounce).add();
     }
 
     /** True if this player's client has the mod (and so draws the HUD itself). */
@@ -54,6 +57,11 @@ public final class CgNetwork {
 
     private static void onShop(ShopSyncPacket msg, Supplier<NetworkEvent.Context> ctx) {
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> net.jji.cullinggames.client.ClientPackets.onShop(msg));
+        ctx.get().setPacketHandled(true);
+    }
+
+    private static void onAnnounce(AnnouncePacket msg, Supplier<NetworkEvent.Context> ctx) {
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> net.jji.cullinggames.client.ClientPackets.onAnnounce(msg));
         ctx.get().setPacketHandled(true);
     }
 

@@ -2,6 +2,7 @@ package net.jji.cullinggames.colony;
 
 import net.jji.cullinggames.event.EventState;
 import net.jji.cullinggames.event.Kogane;
+import net.jji.cullinggames.network.AnnouncePacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -42,10 +43,15 @@ public final class Barrier {
             return false;
         }
         if (ColonyService.pushInside(server, player, colony)) {
-            player.displayClientMessage(Kogane.line("You cannot leave " + colony.name() + "."), true);
+            blocked(player, colony);
             return true;
         }
         return false;
+    }
+
+    private static void blocked(ServerPlayer player, Colony colony) {
+        player.displayClientMessage(Kogane.line("You cannot leave " + colony.name() + "."), true);
+        Kogane.announce(player, AnnouncePacket.Kind.BARRIER, "You cannot leave " + colony.name(), "");
     }
 
     @SubscribeEvent
@@ -83,7 +89,7 @@ public final class Barrier {
         Colony colony = heldColony(server, player);
         if (colony != null && !colony.contains(player.level().dimension(), event.getTargetX(), event.getTargetZ())) {
             event.setCanceled(true);
-            player.displayClientMessage(Kogane.line("You cannot leave " + colony.name() + "."), true);
+            blocked(player, colony);
         }
     }
 
@@ -95,7 +101,7 @@ public final class Barrier {
         Colony colony = heldColony(player.getServer(), player);
         if (colony != null && !colony.dimension().equals(event.getDimension())) {
             event.setCanceled(true);
-            player.displayClientMessage(Kogane.line("You cannot leave " + colony.name() + "."), true);
+            blocked(player, colony);
         }
     }
 }
