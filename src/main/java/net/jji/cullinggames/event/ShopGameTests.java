@@ -60,14 +60,14 @@ public final class ShopGameTests {
         try {
             EventManager.start(server, PenaltyMode.SEAL_CT, 3);
             EventState state = EventState.get(server);
-            Points.set(server, p1.getUUID(), 50);
+            Points.set(server, p1.getUUID(), 500);
 
             // services
             int lb = Shop.Service.LEADERBOARD.price();
             check(h, Shop.buyService(server, p1, Shop.Service.LEADERBOARD).ok(), "buy leaderboard");
-            check(h, state.points(p1.getUUID()) == 50 - lb, "leaderboard price taken");
+            check(h, state.points(p1.getUUID()) == 500 - lb, "leaderboard price taken");
             check(h, !Shop.buyService(server, p1, Shop.Service.LEADERBOARD).ok()
-                    && state.points(p1.getUUID()) == 50 - lb, "can't buy the same service twice");
+                    && state.points(p1.getUUID()) == 500 - lb, "can't buy the same service twice");
             check(h, !Shop.hasAccess(state, p2.getUUID(), Shop.Service.LEADERBOARD), "other players don't get it");
 
             for (int i = 0; i < 100; i++) {

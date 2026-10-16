@@ -81,22 +81,23 @@ public final class NetworkGameTests {
             check(h, !Views.shop(server, p, "").open(), "shop closed before the event");
 
             EventManager.start(server, PenaltyMode.SEAL_CT, 3);
-            Points.set(server, p.getUUID(), 30);
+            int start = Shop.Service.LEADERBOARD.price() + net.jji.cullinggames.config.CgConfig.RULE_COST.get() - 1;
+            Points.set(server, p.getUUID(), start);
             HudSyncPacket hud = Views.hud(server, p);
-            check(h, hud.active() && hud.points() == 30 && "gt_view".equals(hud.colony()) && hud.lives() == 3
+            check(h, hud.active() && hud.points() == start && "gt_view".equals(hud.colony()) && hud.lives() == 3
                     && hud.ticksLeft() == hud.limitTicks(), "HUD shows own points, colony, lives and full timer");
 
             ShopSyncPacket afterBuy = Views.handle(p, new ShopActionPacket(ShopActionPacket.Action.BUY, "leaderboard"));
             int price = Shop.Service.LEADERBOARD.price();
-            check(h, afterBuy.points() == 30 - price, "buy from the screen takes points");
+            check(h, afterBuy.points() == start - price, "buy from the screen takes points");
             check(h, afterBuy.services().stream().anyMatch(s -> s.id().equals("leaderboard") && s.owned()),
                     "screen shows the service as owned");
             check(h, !afterBuy.message().isEmpty(), "screen gets a result message");
 
             ShopSyncPacket bad = Views.handle(p, new ShopActionPacket(ShopActionPacket.Action.BUY, "nonsense"));
-            check(h, bad.points() == 30 - price, "unknown item changes nothing");
+            check(h, bad.points() == start - price, "unknown item changes nothing");
             ShopSyncPacket poor = Views.handle(p, new ShopActionPacket(ShopActionPacket.Action.RULE, "double_points"));
-            check(h, poor.points() == 30 - price && !EventState.get(server).hasRule("double_points"),
+            check(h, poor.points() == start - price && !EventState.get(server).hasRule("double_points"),
                     "rule refused without enough points");
 
             EventManager.stop(server);

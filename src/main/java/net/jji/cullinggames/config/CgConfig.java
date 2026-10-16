@@ -1,6 +1,7 @@
 package net.jji.cullinggames.config;
 
 import java.util.List;
+import net.jji.cullinggames.event.KillSteal;
 import net.jji.cullinggames.event.PenaltyMode;
 import net.minecraftforge.common.ForgeConfigSpec;
 
@@ -17,6 +18,9 @@ public final class CgConfig {
     public static final ForgeConfigSpec.IntValue EVENT_LIVES;
     public static final ForgeConfigSpec.IntValue PLAYER_KILL_POINTS;
     public static final ForgeConfigSpec.IntValue WEAK_KILL_POINTS;
+    public static final ForgeConfigSpec.EnumValue<KillSteal> KILL_STEAL_MODE;
+    public static final ForgeConfigSpec.IntValue KILL_STEAL_FLAT;
+    public static final ForgeConfigSpec.IntValue KILL_STEAL_PERCENT;
     public static final ForgeConfigSpec.IntValue RULE_COST;
     public static final ForgeConfigSpec.BooleanValue WEAK_TARGETS_ALL_HOSTILE;
     public static final ForgeConfigSpec.IntValue LEADERBOARD_PRICE;
@@ -51,10 +55,18 @@ public final class CgConfig {
         b.pop();
 
         b.push("points");
-        PLAYER_KILL_POINTS = b.comment("Points for killing another participant.")
+        PLAYER_KILL_POINTS = b.comment("Points Kogane gives for killing another participant.")
                 .defineInRange("playerKill", 5, 0, 1000);
         WEAK_KILL_POINTS = b.comment("Points for killing a weaker target.")
                 .defineInRange("weakKill", 1, 0, 1000);
+        KILL_STEAL_MODE = b.comment("On a participant kill the killer also takes points from the victim:",
+                        "FLAT = killStealFlat points, PERCENT = killStealPercent % of the victim's points, NONE = nothing.",
+                        "The victim loses what is taken (never below 0).")
+                .defineEnum("killStealMode", KillSteal.FLAT);
+        KILL_STEAL_FLAT = b.comment("Points taken from the victim in FLAT mode.")
+                .defineInRange("killStealFlat", 5, 0, 100000);
+        KILL_STEAL_PERCENT = b.comment("Percent of the victim's points taken in PERCENT mode.")
+                .defineInRange("killStealPercent", 25, 0, 100);
         RULE_COST = b.comment("Points needed to add a rule.")
                 .defineInRange("ruleCost", 100, 0, 100000);
         WEAK_TARGETS_ALL_HOSTILE = b.comment("Every hostile mob (zombies, cursed spirits that count as monsters) is a weak target.")
@@ -65,11 +77,11 @@ public final class CgConfig {
 
         b.push("shop");
         LEADERBOARD_PRICE = b.comment("Points to unlock the leaderboard for the rest of the event.")
-                .defineInRange("leaderboardPrice", 10, 0, 100000);
+                .defineInRange("leaderboardPrice", 100, 0, 100000);
         TRANSFER_PRICE = b.comment("Points to unlock point transfers for the rest of the event.")
-                .defineInRange("transferPrice", 10, 0, 100000);
+                .defineInRange("transferPrice", 100, 0, 100000);
         KILLLOG_PRICE = b.comment("Points to unlock the kill log for the rest of the event.")
-                .defineInRange("killLogPrice", 20, 0, 100000);
+                .defineInRange("killLogPrice", 100, 0, 100000);
         LONGER_TIMER_MINUTES = b.comment("Extra timer minutes from the longer_timer rule.")
                 .defineInRange("longerTimerMinutes", 10, 1, 24 * 60);
         MONEY_ITEM = b.comment("Item Kogane pays out when points are cashed out (Lightman's Currency coin). Empty disables cash-out.")
