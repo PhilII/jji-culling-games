@@ -9,6 +9,7 @@ import net.jji.cullinggames.event.EventManager;
 import net.jji.cullinggames.event.KoganeBar;
 import net.jji.cullinggames.event.Penalties;
 import net.jji.cullinggames.event.Points;
+import net.jji.cullinggames.event.Rewards;
 import net.jji.cullinggames.network.CgNetwork;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
@@ -31,5 +32,6 @@ public final class CullingGames {
         MinecraftForge.EVENT_BUS.register(Points.class);
         MinecraftForge.EVENT_BUS.register(Penalties.class);
         MinecraftForge.EVENT_BUS.register(KoganeBar.class);
+        MinecraftForge.EVENT_BUS.register(Rewards.class);
     }
 }

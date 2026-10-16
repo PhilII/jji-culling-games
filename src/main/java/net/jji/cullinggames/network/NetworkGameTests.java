@@ -84,7 +84,9 @@ public final class NetworkGameTests {
             int start = Shop.Service.LEADERBOARD.price() + net.jji.cullinggames.config.CgConfig.RULE_COST.get() - 1;
             Points.set(server, p.getUUID(), start);
             HudSyncPacket hud = Views.hud(server, p);
-            check(h, hud.active() && hud.points() == start && "gt_view".equals(hud.colony()) && hud.lives() == 3
+            // The player can land in any colony in the world (dev worlds have more than the test's own).
+            String colony = EventState.get(server).colonyOf(p.getUUID());
+            check(h, hud.active() && hud.points() == start && colony != null && colony.equals(hud.colony()) && hud.lives() == 3
                     && hud.ticksLeft() == hud.limitTicks(), "HUD shows own points, colony, lives and full timer");
 
             ShopSyncPacket afterBuy = Views.handle(p, new ShopActionPacket(ShopActionPacket.Action.BUY, "leaderboard"));

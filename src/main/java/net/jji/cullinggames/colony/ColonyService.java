@@ -2,6 +2,7 @@ package net.jji.cullinggames.colony;
 
 import java.util.Random;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -53,6 +54,39 @@ public final class ColonyService {
         player.teleportTo(level, xz.x, y, xz.y, player.getYRot(), player.getXRot());
         player.setDeltaMovement(0, 0, 0);
         player.fallDistance = 0;
+    }
+
+    /**
+     * Where a player can stand at or near this spot: the first block with solid ground and two free blocks,
+     * searching down from the spot, then up, then the top of the column. Keeps spawns under a roof under it.
+     */
+    public static BlockPos safeStand(ServerLevel level, BlockPos near) {
+        for (int dy = 0; dy <= 64; dy++) {
+            BlockPos p = near.below(dy);
+            if (p.getY() <= level.getMinBuildHeight()) {
+                break;
+            }
+            if (canStand(level, p)) {
+                return p;
+            }
+        }
+        for (int dy = 1; dy <= 64; dy++) {
+            BlockPos p = near.above(dy);
+            if (p.getY() >= level.getMaxBuildHeight() - 1) {
+                break;
+            }
+            if (canStand(level, p)) {
+                return p;
+            }
+        }
+        return new BlockPos(near.getX(), level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, near.getX(), near.getZ()), near.getZ());
+    }
+
+    private static boolean canStand(ServerLevel level, BlockPos feet) {
+        return level.getBlockState(feet.below()).isFaceSturdy(level, feet.below(), Direction.UP)
+                && level.getBlockState(feet).getCollisionShape(level, feet).isEmpty()
+                && level.getBlockState(feet.above()).getCollisionShape(level, feet.above()).isEmpty()
+                && level.getFluidState(feet).isEmpty();
     }
 
     private static double surfaceY(ServerLevel level, Vec2 xz) {

@@ -2,9 +2,9 @@ package net.jji.cullinggames.network;
 
 import net.minecraft.network.FriendlyByteBuf;
 
-/** Client → server: open the shop, buy something, or add a rule. The server checks everything. */
+/** Client → server: open the shop, buy something, add a rule or buy a reward. The server checks everything. */
 public record ShopActionPacket(Action action, String id) {
-    public enum Action { OPEN, BUY, RULE }
+    public enum Action { OPEN, BUY, RULE, REWARD }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeEnum(action);
