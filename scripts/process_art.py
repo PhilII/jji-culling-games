@@ -30,6 +30,10 @@ def keyed(name, despill=False):
         color[..., 0] -= spill
         color[..., 2] -= spill
         alpha = alpha * (1 - spill / 255)
+    # Unmixing takes red and blue out of soft edge pixels, which leaves them green (a green outline on dark
+    # backgrounds). No art here has green at its outer edge, so edge pixels get no more green than red/blue.
+    edge = (alpha > 0) & (alpha < 1)
+    color[..., 1] = np.where(edge, np.minimum(color[..., 1], np.maximum(color[..., 0], color[..., 2])), color[..., 1])
     color[alpha == 0] = 0
     out = np.dstack([color, alpha * 255]).astype(np.uint8)
     return Image.fromarray(out)
@@ -52,6 +56,12 @@ def square(img):
 
 def save(img, path):
     path.parent.mkdir(parents=True, exist_ok=True)
+    if img.mode == "RGBA":
+        # Resizing makes new soft edge pixels; keep them free of green as in keyed().
+        a = np.asarray(img).astype(int)
+        edge = (a[..., 3] > 0) & (a[..., 3] < 255)
+        a[..., 1] = np.where(edge, np.minimum(a[..., 1], np.maximum(a[..., 0], a[..., 2])), a[..., 1])
+        img = Image.fromarray(a.astype(np.uint8))
     img.save(path, optimize=True)
     print(f"{path.relative_to(RES)}  {img.width}x{img.height}")
 
@@ -85,8 +95,16 @@ def main():
             if not 560 - 26 <= x <= 700 - 26 or (g > r + 25 and g > b + 25):  # drop the rim and the green
                 px[x, y] = (0, 0, 0, 0)
     save(fit(head, 602), GUI / "shop_head.png")
-    save(fit(shop.crop((426, 340, 830, 966)), 202, 313), GUI / "shop_frame.png")
-    save(fit(shop.crop((454, 966, 1076, 1226)), 311, 130), GUI / "shop_tail.png")
+    # Frame: from the top of the rim (row 368) so no wing or tooth pixels are left in its corners.
+    save(fit(shop.crop((415, 368, 840, 966)), 212, 299), GUI / "shop_frame.png")
+    # Tail: starts 120 rows above the frame bottom so the heart-shaped tip (beside the frame) is kept;
+    # everything of the frame itself in those rows is cleared.
+    tail = shop.crop((454, 846, 1080, 1226))
+    tp = tail.load()
+    for y in range(966 - 846):
+        for x in range(900 - 454):
+            tp[x, y] = (0, 0, 0, 0)
+    save(fit(tail, 313, 190), GUI / "shop_tail.png")
 
     title = keyed("title-card", despill=True)
     save(fit(title.crop(title.getbbox()), 1024), GUI / "title_card.png")

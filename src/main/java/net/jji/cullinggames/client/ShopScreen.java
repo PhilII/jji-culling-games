@@ -32,11 +32,12 @@ public final class ShopScreen extends Screen {
     private static final int[] COIN_AMOUNTS = {1, 5, 10};
 
     // Texture sizes and slice borders, in texture pixels (see scripts/process_art.py).
-    private static final int HEAD_W = 602, HEAD_H = 164, HEAD_FRAME_TOP = 148;
-    private static final int FRAME_W = 202, FRAME_H = 313;
-    private static final int SLICE_L = 22, SLICE_R = 20, SLICE_T = 40, SLICE_B = 61;
-    private static final int GREEN_L = 19, GREEN_R = 20, GREEN_T = 22, GREEN_B = 43;
-    private static final int TAIL_W = 311, TAIL_H = 130;
+    private static final int HEAD_W = 602, HEAD_H = 164, HEAD_FRAME_TOP = 162;
+    private static final int FRAME_W = 212, FRAME_H = 299;
+    private static final int SLICE_L = 27, SLICE_R = 25, SLICE_T = 26, SLICE_B = 60;
+    private static final int GREEN_L = 24, GREEN_R = 25, GREEN_T = 8, GREEN_B = 43;
+    /** The tail texture starts TAIL_ABOVE rows above the frame's bottom edge (its tip rises beside the frame). */
+    private static final int TAIL_W = 313, TAIL_H = 190, TAIL_ABOVE = 60;
     private static final float TAIL_CENTER = 86.5f;
 
     private static final int ROW = 18;
@@ -74,7 +75,7 @@ public final class ShopScreen extends Screen {
         frameW = Math.min(width - 16, 270);
         frameX = (width - frameW) / 2;
         frameY = 4 + Math.round(HEAD_FRAME_TOP * k);
-        int frameBottom = height - 4 - Math.round(TAIL_H * k);
+        int frameBottom = height - 4 - Math.round((TAIL_H - TAIL_ABOVE) * k);
         frameH = frameBottom - frameY;
         left = frameX + Math.round(GREEN_L * k) + 4;
         right = frameX + frameW - Math.round(GREEN_R * k) - 4;
@@ -267,12 +268,15 @@ public final class ShopScreen extends Screen {
         g.drawString(font, font.plainSubstrByWidth(text, maxW), x, y + 5, LcdButton.INK, false);
     }
 
-    /** Frame (9-slice, so the screen can be any size), then the tail, then the head on top. */
+    /** Tail first (its tip goes behind a wide frame), then the frame (9-slice, any size), then the head on top. */
     private void drawKogane(GuiGraphics g) {
         CgTextures.ensureFiltered();
         int l = Math.round(SLICE_L * k), r = Math.round(SLICE_R * k), t = Math.round(SLICE_T * k), b = Math.round(SLICE_B * k);
         int x0 = frameX, x1 = frameX + l, x2 = frameX + frameW - r, x3 = frameX + frameW;
         int y0 = frameY, y1 = frameY + t, y2 = frameY + frameH - b, y3 = frameY + frameH;
+        int tailW = Math.round(TAIL_W * k);
+        int tailX = Math.round(width / 2f - TAIL_CENTER * k);
+        CgTextures.whole(g, CgTextures.SHOP_TAIL, tailX, y3 - Math.round(TAIL_ABOVE * k), tailW, Math.round(TAIL_H * k), TAIL_W, TAIL_H);
         int[] dx = {x0, x1, x2, x3};
         int[] dy = {y0, y1, y2, y3};
         int[] u = {0, SLICE_L, FRAME_W - SLICE_R, FRAME_W};
@@ -283,9 +287,6 @@ public final class ShopScreen extends Screen {
                         u[i], v[j], u[i + 1] - u[i], v[j + 1] - v[j]);
             }
         }
-        int tailW = Math.round(TAIL_W * k);
-        int tailX = Math.round(width / 2f - TAIL_CENTER * k);
-        CgTextures.whole(g, CgTextures.SHOP_TAIL, tailX, y3, tailW, Math.round(TAIL_H * k), TAIL_W, TAIL_H);
         int headW = Math.round(HEAD_W * k);
         CgTextures.whole(g, CgTextures.SHOP_HEAD, (width - headW) / 2, 4, headW, Math.round(HEAD_H * k), HEAD_W, HEAD_H);
     }
