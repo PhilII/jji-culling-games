@@ -105,12 +105,12 @@ Goal: a jar the server can run in a real event.
 - 16 Oct: all 96 mods + ours load on the real map; colony/start/stop work; spark median 5.8 ms/tick idle.
 
 ## Open questions (do not block work)
-- Red: are the 4 starter rules right (reveal_points, double_points, longer_timer, free_transfers)? Prices (leaderboard 10, transfer 10, kill log 20, rule 100) and coin per point are config.
-- Do Jujutsu Craft shikigami/summons count as `OwnableEntity`? If not, their kills don't credit the owner yet. Check in the real modpack.
-- Which JJC entities are "weak targets"? Default: every hostile mob. Extra ids can go in `weakTargetsExtra`.
-- Red: final OK on scope; Kogane bossbar; end rewards; which rules can be bought.
+- Red: shop service prices. BigMann proposed 100 points each for leaderboard, transfers and kill log (like rules); the code still has 10/10/20 (config).
+- Red: kill reward. Red wants a kill to give base points plus a share of the victim's points (BigMann: a percentage). Share not decided yet.
+- Red: final OK on scope; end rewards.
+- Which JJC entities are "weak targets"? Default: every hostile mob except summons. Extra ids can go in `weakTargetsExtra`.
 - Is JujutsuAlm still on the server? (configs exist, no jar found)
-- Which CT value means "no CT" (step 4 test).
+- Resolved 16 Oct: JJC summons carry `OWNER_UUID` (not `OwnableEntity`); handled. The seal drains CE instead of changing the CT, so no "no CT" value is needed.
 
 ## Workflow and checkpoints
 - `main` is always buildable. Never commit directly to `main` after setup.
