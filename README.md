@@ -27,7 +27,7 @@ All values (timer, points, kill steal, lives, prices, coin item) are in `serverc
 ```
 The jar is in `build/libs/`. Tests: `./scripts/gametest.sh` (runs Forge GameTests and checks they all passed).
 
-See [PLAN.md](PLAN.md) for the development plan and status.
+Server admins: see [ADMIN_GUIDE.md](ADMIN_GUIDE.md). Development plan and status: [PLAN.md](PLAN.md).
 
 ## License
 All rights reserved. The source is public to read; ask before reusing it.
