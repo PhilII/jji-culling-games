@@ -5,7 +5,8 @@ This file is the source of truth for the build. Every session starts by reading 
 - **Server**: Jujutsu Incident (JJI), Forge 1.20.1 (47.4.10), Java 17, ServerMiner.
 - **Mod**: id `cullinggames`, one jar for client and server.
 - **Owner**: PhilL. Design input: Red (scope), BigMann (features).
-- **Design source**: `../drafts/culling-games/spec-v1.md` (outside this repo, kept local).
+- **Repo location**: `~/dev/culling-games` (moved 16 Oct out of `Desktop/CODE/Fujiwara`, which is iCloud-optimized: slow reads and once a file truncated to 0 bytes during checkout). Keep it outside Desktop/Documents.
+- **Design source**: `~/Desktop/CODE/Fujiwara/drafts/culling-games/spec-v1.md` (outside this repo, kept local).
 
 ## Status
 
@@ -125,7 +126,7 @@ Goal: a jar the server can run in a real event.
 - If a build hangs on downloads, add `-Dorg.gradle.internal.http.connectionTimeout=60000 -Dorg.gradle.internal.http.socketTimeout=120000`.
 
 ## Testing with Jujutsu Craft
-- Copy the server's jars into `libs/` (git-ignored): `JujutsuCraft-ver51-forge-1.20.1.jar`, `geckolib-forge-1.20.1-4.7.2.jar`, `player-animation-lib-forge-1.0.2-rc1+1.20.jar` from `../server-copy/mods/`.
+- Copy the server's jars into `libs/` (git-ignored): `JujutsuCraft-ver51-forge-1.20.1.jar`, `geckolib-forge-1.20.1-4.7.2.jar`, `player-animation-lib-forge-1.0.2-rc1+1.20.jar` from `~/fujiwara-local-server/mods/` (fast, outside iCloud) or `~/Desktop/CODE/Fujiwara/server-copy/mods/`.
 - `build.gradle` deobfuscates every jar in `libs/` onto the dev runtime only. The mod never compiles against them.
 - Without `libs/`, the build and tests still run; JJC-specific checks are skipped.
 - Lightman's Currency can't be loaded in the dev test server (it loads a client class on the dedicated server). Cash-out is tested for the "coin item missing" path only; test real coins on the server.
