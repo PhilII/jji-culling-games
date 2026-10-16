@@ -134,4 +134,67 @@ public final class PointsGameTests {
         }
         h.succeed();
     }
+
+    @GameTest(template = "empty", batch = "steal")
+    public static void killStealsVictimPoints(GameTestHelper h) {
+        try {
+            runSteal(h);
+        } catch (RuntimeException e) {
+            CullingGames.LOGGER.error("killStealsVictimPoints threw", e);
+            throw e;
+        }
+    }
+
+    private static void runSteal(GameTestHelper h) {
+        check(h, KillSteal.FLAT.amount(3, 5, 0) == 3, "flat steal is capped at what the victim has");
+        check(h, KillSteal.PERCENT.amount(10, 0, 25) == 2, "percent steal rounds down");
+        check(h, KillSteal.NONE.amount(100, 5, 50) == 0, "none steals nothing");
+
+        MinecraftServer server = h.getLevel().getServer();
+        EventManager.stop(server);
+        ColonyStore store = ColonyStore.get(server);
+        store.remove("gt_steal");
+        BlockPos c = h.absolutePos(new BlockPos(2, 1, 2));
+        store.add(Colony.circle("gt_steal", h.getLevel().dimension(), c.getX(), c.getZ(), 8));
+        ServerPlayer killer = TestPlayers.create(h, "gt_st1");
+        ServerPlayer victim = TestPlayers.create(h, "gt_st2");
+        KillSteal modeBefore = net.jji.cullinggames.config.CgConfig.KILL_STEAL_MODE.get();
+        int flatBefore = net.jji.cullinggames.config.CgConfig.KILL_STEAL_FLAT.get();
+        int percentBefore = net.jji.cullinggames.config.CgConfig.KILL_STEAL_PERCENT.get();
+        try {
+            EventManager.start(server, PenaltyMode.SEAL_CT, 3);
+            EventState state = EventState.get(server);
+            net.jji.cullinggames.config.CgConfig.KILL_STEAL_MODE.set(KillSteal.FLAT);
+            net.jji.cullinggames.config.CgConfig.KILL_STEAL_FLAT.set(5);
+            Points.set(server, victim.getUUID(), 20);
+            for (int i = 0; i < 30; i++) {
+                state.tickRunning();
+            }
+            kill(victim, killer);
+            check(h, state.points(killer.getUUID()) == 10, "default kill: 5 from Kogane + 5 taken from the victim");
+            check(h, state.points(victim.getUUID()) == 15, "victim loses the stolen points");
+            check(h, state.ticksSincePointChange(victim.getUUID()) == 30, "losing points doesn't reset the victim's timer");
+            check(h, state.kills().get(0).points() == 10, "kill log records the full gain");
+
+            net.jji.cullinggames.config.CgConfig.KILL_STEAL_MODE.set(KillSteal.PERCENT);
+            net.jji.cullinggames.config.CgConfig.KILL_STEAL_PERCENT.set(50);
+            kill(victim, killer);
+            check(h, state.points(killer.getUUID()) == 22 && state.points(victim.getUUID()) == 8,
+                    "percent mode takes 50% (7 of 15)");
+
+            Points.set(server, victim.getUUID(), 0);
+            net.jji.cullinggames.config.CgConfig.KILL_STEAL_MODE.set(KillSteal.FLAT);
+            kill(victim, killer);
+            check(h, state.points(killer.getUUID()) == 27 && state.points(victim.getUUID()) == 0,
+                    "a victim with 0 points only gives the base 5");
+        } finally {
+            net.jji.cullinggames.config.CgConfig.KILL_STEAL_MODE.set(modeBefore);
+            net.jji.cullinggames.config.CgConfig.KILL_STEAL_FLAT.set(flatBefore);
+            net.jji.cullinggames.config.CgConfig.KILL_STEAL_PERCENT.set(percentBefore);
+            EventManager.stop(server);
+            store.remove("gt_steal");
+            TestPlayers.remove(h, killer, victim);
+        }
+        h.succeed();
+    }
 }

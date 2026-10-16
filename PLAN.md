@@ -29,6 +29,8 @@ This file is the source of truth for the build. Every session starts by reading 
 - **Lives**: event deaths do not cost real server lives. Admins set event lives.
 - **Kogane shop**: admins stock it. Points convert to Lightman's money, never the other way.
 - **Art**: placeholders first (Kogane, HUD, sounds).
+- **Shop service prices** (final ruling relayed by PhilL, 16 Oct; BigMann's idea): leaderboard, transfers and kill log cost 100 points each, like rules.
+- **Kill reward** (PhilL, 16 Oct): Kogane gives 5 and the killer takes 5 from the victim by default (victim loses them, never below 0, their timer is not reset). Mode FLAT / PERCENT / NONE and amounts are config values, changeable in the file or in game with `/cg config`.
 - **How the CT seal works** (tested 16 Oct): the seal drains cursed energy to 0 every tick and gives the saved amount back on unseal. Jujutsu Craft's CT fields are never written. Reason: JJC treats CT 0 as "re-roll a random CT on respawn" and CT -1 as "non-sorcerer" (and can grant advancements on respawn), and Alm ownership / ReBalanced key off the CT, so changing it risks losing unique CTs.
 - **Integration**: Jujutsu Craft, ReBalanced and Lightman's Currency are soft dependencies, read at runtime. We never copy their code (all are "All Rights Reserved").
 
@@ -105,8 +107,6 @@ Goal: a jar the server can run in a real event.
 - 16 Oct: all 96 mods + ours load on the real map; colony/start/stop work; spark median 5.8 ms/tick idle.
 
 ## Open questions (do not block work)
-- Red: shop service prices. BigMann proposed 100 points each for leaderboard, transfers and kill log (like rules); the code still has 10/10/20 (config).
-- Red: kill reward. Red wants a kill to give base points plus a share of the victim's points (BigMann: a percentage). Share not decided yet.
 - Red: final OK on scope; end rewards.
 - Which JJC entities are "weak targets"? Default: every hostile mob except summons. Extra ids can go in `weakTargetsExtra`.
 - Is JujutsuAlm still on the server? (configs exist, no jar found)

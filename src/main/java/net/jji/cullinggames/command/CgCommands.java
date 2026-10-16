@@ -82,6 +82,7 @@ public final class CgCommands {
                         .then(Commands.literal("remove").then(Commands.argument("player", EntityArgument.player())
                                 .executes(c -> participant(c, false)))))
                 .then(pointsCommands())
+                .then(ConfigCommand.build())
                 .then(Commands.literal("killlog")
                         .executes(c -> killLog(c, 10))
                         .then(Commands.argument("count", IntegerArgumentType.integer(1, 100))
@@ -517,6 +518,7 @@ public final class CgCommands {
         {"/cg points get|set|add|remove <player> [n]", ""},
         {"/cg shop add <price>", "sell the item in your hand; /cg shop remove <id>"},
         {"/cg killlog [count]", "kill proof"},
+        {"/cg config [key] [value]", "show or change settings in game"},
     };
 
     private static int help(CommandContext<CommandSourceStack> c) {

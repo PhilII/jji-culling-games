@@ -25,7 +25,8 @@ public final class CommandGameTests {
     private static final String[] ADMIN_COMMANDS = {
         "cg start", "cg stop", "cg stop 5", "cg pause", "cg resume", "cg status", "cg colony list",
         "cg colony add x circle 0 0 10", "cg participant add gt_perm", "cg points get gt_perm",
-        "cg points set gt_perm 5", "cg points add gt_perm 5", "cg shop add 5", "cg shop remove 1"
+        "cg points set gt_perm 5", "cg points add gt_perm 5", "cg shop add 5", "cg shop remove 1",
+        "cg config", "cg config killStealFlat", "cg config killStealFlat 5"
     };
 
     /** True if the whole command parses for this source (unknown or forbidden commands don't). */
@@ -56,6 +57,37 @@ public final class CommandGameTests {
             }
         } finally {
             TestPlayers.remove(h, p);
+        }
+        h.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "config")
+    public static void configCommandChangesValues(GameTestHelper h) {
+        var server = h.getLevel().getServer();
+        CommandSourceStack console = server.createCommandSourceStack().withSuppressedOutput();
+        int before = net.jji.cullinggames.config.CgConfig.KILL_STEAL_FLAT.get();
+        var modeBefore = net.jji.cullinggames.config.CgConfig.KILL_STEAL_MODE.get();
+        try {
+            server.getCommands().performPrefixedCommand(console, "cg config killStealFlat 7");
+            if (net.jji.cullinggames.config.CgConfig.KILL_STEAL_FLAT.get() != 7) {
+                h.fail("config command should set killStealFlat to 7");
+            }
+            server.getCommands().performPrefixedCommand(console, "cg config killStealFlat abc");
+            server.getCommands().performPrefixedCommand(console, "cg config killStealPercent 150");
+            if (net.jji.cullinggames.config.CgConfig.KILL_STEAL_FLAT.get() != 7
+                    || net.jji.cullinggames.config.CgConfig.KILL_STEAL_PERCENT.get() > 100) {
+                h.fail("invalid values must be rejected");
+            }
+            server.getCommands().performPrefixedCommand(console, "cg config killStealMode percent");
+            if (net.jji.cullinggames.config.CgConfig.KILL_STEAL_MODE.get() != net.jji.cullinggames.event.KillSteal.PERCENT) {
+                h.fail("enum values are case-insensitive");
+            }
+            if (ConfigCommand.parse(true, "yes") != null || !Boolean.TRUE.equals(ConfigCommand.parse(false, "TRUE"))) {
+                h.fail("booleans parse only true/false");
+            }
+        } finally {
+            net.jji.cullinggames.config.CgConfig.KILL_STEAL_FLAT.set(before);
+            net.jji.cullinggames.config.CgConfig.KILL_STEAL_MODE.set(modeBefore);
         }
         h.succeed();
     }

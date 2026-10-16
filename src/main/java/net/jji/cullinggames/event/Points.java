@@ -60,13 +60,33 @@ public final class Points {
         String victimName = victimIsPlayer
                 ? ((ServerPlayer) victim).getGameProfile().getName()
                 : entityId(victim);
+        int stolen = 0;
+        if (victimIsPlayer && state.isParticipant(victim.getUUID())) {
+            stolen = steal(server, state, (ServerPlayer) victim, killer);
+            award += stolen;
+        }
         state.recordKill(new KillRecord(killer.getUUID(), killer.getGameProfile().getName(),
                 victimIsPlayer ? victim.getUUID() : null, victimName,
                 System.currentTimeMillis(), state.runningTicks(), victim.level().dimension().location().toString(),
                 victim.getBlockX(), victim.getBlockY(), victim.getBlockZ(), award));
         int total = add(server, killer.getUUID(), award);
-        Kogane.tell(killer, "+" + award + " points. You have " + total + ".");
+        Kogane.tell(killer, "+" + award + " points" + (stolen > 0 ? " (" + stolen + " taken from " + victimName + ")" : "")
+                + ". You have " + total + ".");
         CullingGames.LOGGER.debug("{} killed {} for {} points", killer.getGameProfile().getName(), victimName, award);
+    }
+
+    /**
+     * Takes points from the victim as configured (killStealMode). The victim's loss never resets their timer.
+     * Returns the points taken; the caller adds them to the killer.
+     */
+    static int steal(MinecraftServer server, EventState state, ServerPlayer victim, ServerPlayer killer) {
+        int have = state.points(victim.getUUID());
+        int taken = CgConfig.KILL_STEAL_MODE.get().amount(have, CgConfig.KILL_STEAL_FLAT.get(), CgConfig.KILL_STEAL_PERCENT.get());
+        if (taken > 0) {
+            state.setPoints(victim.getUUID(), have - taken);
+            Kogane.tell(victim, killer.getGameProfile().getName() + " took " + taken + " of your points. You have " + (have - taken) + ".");
+        }
+        return taken;
     }
 
     /**
