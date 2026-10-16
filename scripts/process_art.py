@@ -85,8 +85,16 @@ def main():
             if not 560 - 26 <= x <= 700 - 26 or (g > r + 25 and g > b + 25):  # drop the rim and the green
                 px[x, y] = (0, 0, 0, 0)
     save(fit(head, 602), GUI / "shop_head.png")
-    save(fit(shop.crop((426, 340, 830, 966)), 202, 313), GUI / "shop_frame.png")
-    save(fit(shop.crop((454, 966, 1076, 1226)), 311, 130), GUI / "shop_tail.png")
+    # Frame: from the top of the rim (row 368) so no wing or tooth pixels are left in its corners.
+    save(fit(shop.crop((415, 368, 840, 966)), 212, 299), GUI / "shop_frame.png")
+    # Tail: starts 120 rows above the frame bottom so the heart-shaped tip (beside the frame) is kept;
+    # everything of the frame itself in those rows is cleared.
+    tail = shop.crop((454, 846, 1080, 1226))
+    tp = tail.load()
+    for y in range(966 - 846):
+        for x in range(900 - 454):
+            tp[x, y] = (0, 0, 0, 0)
+    save(fit(tail, 313, 190), GUI / "shop_tail.png")
 
     title = keyed("title-card", despill=True)
     save(fit(title.crop(title.getbbox()), 1024), GUI / "title_card.png")
