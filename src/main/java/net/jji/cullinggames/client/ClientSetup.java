@@ -2,6 +2,7 @@ package net.jji.cullinggames.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.jji.cullinggames.CullingGames;
+import net.jji.cullinggames.network.BarrierSyncPacket;
 import net.jji.cullinggames.network.CgNetwork;
 import net.jji.cullinggames.network.HudSyncPacket;
 import net.jji.cullinggames.network.ShopActionPacket;
@@ -67,6 +68,7 @@ public final class ClientSetup {
         public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
             ClientPackets.hud = HudSyncPacket.INACTIVE;
             AnnouncementOverlay.clear();
+            ClientPackets.barriers = BarrierSyncPacket.NONE;
         }
     }
 }

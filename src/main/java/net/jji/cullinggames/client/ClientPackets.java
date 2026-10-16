@@ -1,6 +1,7 @@
 package net.jji.cullinggames.client;
 
 import net.jji.cullinggames.network.AnnouncePacket;
+import net.jji.cullinggames.network.BarrierSyncPacket;
 import net.jji.cullinggames.network.HudSyncPacket;
 import net.jji.cullinggames.network.ShopSyncPacket;
 import net.minecraft.client.Minecraft;
@@ -9,6 +10,9 @@ import net.minecraft.client.Minecraft;
 public final class ClientPackets {
     /** Latest HUD data from the server; INACTIVE hides the HUD. */
     static volatile HudSyncPacket hud = HudSyncPacket.INACTIVE;
+
+    /** Colony walls to draw; NONE when no event runs. */
+    static volatile BarrierSyncPacket barriers = BarrierSyncPacket.NONE;
 
     private ClientPackets() {}
 
@@ -25,6 +29,10 @@ public final class ClientPackets {
             mc.setScreen(new ShopScreen(msg));
             CgSounds.play("shop");
         }
+    }
+
+    public static void onBarriers(BarrierSyncPacket msg) {
+        barriers = msg;
     }
 
     public static void onAnnounce(AnnouncePacket msg) {

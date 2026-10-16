@@ -6,7 +6,7 @@ Status: pre-release, being tested before it goes live on the server.
 
 ## What it does
 - **Event**: admins start, pause, resume and stop it, or schedule the end with a warning to spend points. It survives restarts.
-- **Colonies**: circle or box areas. Players are spread across them at the start and can't leave (walking, ender pearls, chorus fruit and portals are blocked).
+- **Colonies**: circle or box areas. Players are spread across them at the start and can't leave (walking, ender pearls, chorus fruit and portals are blocked). With the mod on the client, each colony is surrounded by a visible black barrier while the event runs.
 - **Points**: kills give points (players: 5 from Kogane plus 5 taken from the victim; hostile mobs: 1; all configurable). Shikigami kills count for their summoner; summons are never worth points. Every kill is logged.
 - **Penalty**: if a player's points don't go up within the timer (default 19 minutes, warnings at 5 and 1), the admin-chosen penalty applies: their cursed technique is sealed (cursed energy drained) until they score again, or they lose an event life. At 0 lives they become a spectator. Everyone is restored when the event ends.
 - **Kogane's shop**: admin-stocked items, a leaderboard, point transfers, kill-log access, rules that change the event (100 points each), and one-way cash-out to Lightman's Currency coins.

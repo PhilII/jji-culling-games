@@ -54,6 +54,11 @@ public final class Colony {
         return shape;
     }
 
+    /** CIRCLE: {centerX, centerZ, radius, 0}. BOX: {minX, minZ, maxX, maxZ}, inclusive blocks. */
+    public int[] geometry() {
+        return new int[] {a, b, c, d};
+    }
+
     public boolean contains(ResourceKey<Level> dim, double x, double z) {
         if (!dimension.equals(dim)) {
             return false;
