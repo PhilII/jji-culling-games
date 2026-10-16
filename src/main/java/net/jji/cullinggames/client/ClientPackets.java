@@ -1,5 +1,6 @@
 package net.jji.cullinggames.client;
 
+import net.jji.cullinggames.network.AnnouncePacket;
 import net.jji.cullinggames.network.HudSyncPacket;
 import net.jji.cullinggames.network.ShopSyncPacket;
 import net.minecraft.client.Minecraft;
@@ -23,5 +24,9 @@ public final class ClientPackets {
         } else {
             mc.setScreen(new ShopScreen(msg));
         }
+    }
+
+    public static void onAnnounce(AnnouncePacket msg) {
+        AnnouncementOverlay.show(msg);
     }
 }

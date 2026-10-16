@@ -9,6 +9,7 @@ import net.jji.cullinggames.colony.Colony;
 import net.jji.cullinggames.colony.ColonyService;
 import net.jji.cullinggames.colony.ColonyStore;
 import net.jji.cullinggames.config.CgConfig;
+import net.jji.cullinggames.network.AnnouncePacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
@@ -47,6 +48,9 @@ public final class EventManager {
         CullingGames.LOGGER.info("Culling Games #{} started ({} participants, penalty {}, {} lives)",
                 state.eventNumber(), state.participants().size(), penalty, lives);
         Kogane.broadcast(server, "The Culling Games have begun. Participants: " + state.participants().size() + ".");
+        Kogane.announceAll(server, AnnouncePacket.Kind.START, "The Culling Games have begun!",
+                state.participants().size() + (state.participants().size() == 1 ? " player" : " players")
+                        + ". Earn points, or lose your technique.");
         return Result.OK;
     }
 
@@ -60,6 +64,7 @@ public final class EventManager {
         state.end();
         CullingGames.LOGGER.info("Culling Games #{} stopped", number);
         Kogane.broadcast(server, "The Culling Games are over.");
+        Kogane.announceAll(server, AnnouncePacket.Kind.END, "The Culling Games are over!", "Everyone has been restored.");
         return Result.OK;
     }
 
@@ -72,6 +77,8 @@ public final class EventManager {
         state.setEndAt(state.runningTicks() + (long) minutes * 20 * 60);
         Kogane.broadcast(server, "The Culling Games end in " + minutes + (minutes == 1 ? " minute" : " minutes")
                 + ". Spend your points before then.");
+        Kogane.announceAll(server, AnnouncePacket.Kind.WARNING,
+                "The games end in " + minutes + (minutes == 1 ? " minute!" : " minutes!"), "Spend your points before then.");
         return Result.OK;
     }
 
@@ -125,6 +132,7 @@ public final class EventManager {
         state.assignColony(player.getUUID(), colony.name());
         ColonyService.teleportRandom(server, player, colony);
         Kogane.tell(player, "You have been placed in colony " + colony.name() + ".");
+        Kogane.announce(player, AnnouncePacket.Kind.INFO, colony.name() + " colony", "You cannot leave until the games end.");
     }
 
     public static boolean removeParticipant(MinecraftServer server, ServerPlayer player) {
@@ -156,6 +164,7 @@ public final class EventManager {
             long left = state.endAtTicks() - state.runningTicks();
             if (left == 20 * 60) {
                 Kogane.broadcast(server, "One minute until the Culling Games end. Spend your points now.");
+                Kogane.announceAll(server, AnnouncePacket.Kind.WARNING, "1 minute left!", "Spend your points now.");
             } else if (left <= 0) {
                 stop(server);
             }

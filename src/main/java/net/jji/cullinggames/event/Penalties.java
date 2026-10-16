@@ -5,6 +5,7 @@ import java.util.UUID;
 import net.jji.cullinggames.CullingGames;
 import net.jji.cullinggames.compat.JujutsuCraft;
 import net.jji.cullinggames.config.CgConfig;
+import net.jji.cullinggames.network.AnnouncePacket;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -94,6 +95,8 @@ public final class Penalties {
                     + " left to change your points, or face the penalty.");
             player.displayClientMessage(Kogane.line(minutes + " min left to score"), true);
             Kogane.cue(player, Kogane.Cue.WARNING);
+            Kogane.announce(player, AnnouncePacket.Kind.WARNING, minutes + (minutes == 1 ? " minute left!" : " minutes left!"),
+                    "Change your points, or face the penalty.");
         }
     }
 
@@ -121,6 +124,7 @@ public final class Penalties {
                     player.getGameProfile().getName());
         }
         Kogane.tell(player, "Your points did not change in time. Your cursed technique is sealed until you score.");
+        Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "Technique sealed!", "Your points did not change. Score to unseal.");
         Kogane.cue(player, Kogane.Cue.PENALTY);
     }
 
@@ -141,6 +145,7 @@ public final class Penalties {
         if (announce) {
             Kogane.tell(player, "Your cursed technique is unsealed.");
             Kogane.cue(player, Kogane.Cue.GOOD);
+            Kogane.announce(player, AnnouncePacket.Kind.GOOD, "Technique unsealed", "Your cursed energy is back.");
         }
     }
 
@@ -169,11 +174,13 @@ public final class Penalties {
         int left = state.loseLife(player.getUUID());
         if (left > 0) {
             Kogane.tell(player, left + (left == 1 ? " life" : " lives") + " left.");
+            Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "Life lost!", left + (left == 1 ? " life" : " lives") + " left.");
             Kogane.cue(player, Kogane.Cue.PENALTY);
             return;
         }
         Kogane.broadcast(server, player.getGameProfile().getName() + " is out of the Culling Games.");
         Kogane.cue(player, Kogane.Cue.OUT);
+        Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "You are out!", "You can watch until the games end.");
         state.rememberGameMode(player.getUUID(), player.gameMode.getGameModeForPlayer().getName());
         unseal(server, state, player.getUUID(), false);
         if (alive) {

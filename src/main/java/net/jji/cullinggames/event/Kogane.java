@@ -1,5 +1,7 @@
 package net.jji.cullinggames.event;
 
+import net.jji.cullinggames.network.AnnouncePacket;
+import net.jji.cullinggames.network.CgNetwork;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -27,6 +29,19 @@ public final class Kogane {
 
     public static void tell(ServerPlayer player, String text) {
         player.sendSystemMessage(line(text));
+    }
+
+    /** On-screen announcement for players with the mod. Chat messages are sent separately and still reach everyone. */
+    public static void announce(ServerPlayer player, AnnouncePacket.Kind kind, String title, String text) {
+        if (CgNetwork.hasMod(player)) {
+            CgNetwork.send(player, new AnnouncePacket(kind, title, text));
+        }
+    }
+
+    public static void announceAll(MinecraftServer server, AnnouncePacket.Kind kind, String title, String text) {
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            announce(player, kind, title, text);
+        }
     }
 
     public enum Cue {

@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import net.jji.cullinggames.config.CgConfig;
+import net.jji.cullinggames.network.AnnouncePacket;
 import net.jji.cullinggames.shop.ShopStore;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -127,6 +128,8 @@ public final class Shop {
         }
         state.addRule(rule.id());
         Kogane.broadcast(server, player.getGameProfile().getName() + " added a rule: " + rule.description());
+        // The original game has 8 rules, so bought rules continue from 9.
+        Kogane.announceAll(server, AnnouncePacket.Kind.RULE, "Rule " + (8 + state.rules().size()) + " added", rule.description());
         return Result.ok("Rule added.");
     }
 

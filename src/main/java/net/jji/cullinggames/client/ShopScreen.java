@@ -4,37 +4,50 @@ import java.util.List;
 import net.jji.cullinggames.network.CgNetwork;
 import net.jji.cullinggames.network.ShopActionPacket;
 import net.jji.cullinggames.network.ShopSyncPacket;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 /**
- * Kogane's shop. Left: services and rules. Right: admin-stocked items, a page at a time.
- * Every button only sends a request; the server decides and sends the refreshed shop back.
+ * Kogane's shop, drawn as Kogane with its menu open: head and wings on top, the body as a green screen,
+ * the tail below. Tabs for services, rules and admin-stocked items. Every button only sends a request;
+ * the server decides and sends the refreshed shop back.
  */
 public final class ShopScreen extends Screen {
-    private static final int ROW = 20;
-    private static final int TOP = 44;
+    private enum Tab { SERVICES, RULES, ITEMS }
+
+    // Texture sizes and slice borders, in texture pixels (see scripts/process_art.py).
+    private static final int HEAD_W = 602, HEAD_H = 164, HEAD_FRAME_TOP = 148;
+    private static final int FRAME_W = 202, FRAME_H = 313;
+    private static final int SLICE_L = 22, SLICE_R = 20, SLICE_T = 40, SLICE_B = 61;
+    private static final int GREEN_L = 19, GREEN_R = 20, GREEN_T = 22, GREEN_B = 43;
+    private static final int TAIL_W = 311, TAIL_H = 130;
+    private static final float TAIL_CENTER = 86.5f;
+
+    private static final int ROW = 18;
+    private static final int ERROR = 0xFF7A0000;
+
+    private static Tab lastTab = Tab.SERVICES;
 
     private ShopSyncPacket data;
+    private Tab tab = lastTab;
     private int page;
+
+    // layout, computed in init()
+    private float k;
+    private int frameX, frameY, frameW, frameH;
+    private int left, top, right, bottom;
 
     ShopScreen(ShopSyncPacket data) {
         super(Component.literal("Kogane's Shop"));
         this.data = data;
     }
 
-    /** As many item rows as fit above the message line, at least 2. */
-    private int itemsPerPage() {
-        return Math.max(2, (height - 70 - (TOP + 12) - 24) / ROW);
-    }
-
     void update(ShopSyncPacket fresh) {
         this.data = fresh;
-        int pages = Math.max(1, (data.items().size() + itemsPerPage() - 1) / itemsPerPage());
-        page = Math.min(page, pages - 1);
         rebuildWidgets();
     }
 
@@ -42,104 +55,193 @@ public final class ShopScreen extends Screen {
         CgNetwork.CHANNEL.sendToServer(new ShopActionPacket(action, id));
     }
 
+    private void layout() {
+        k = Math.min(Math.min((width - 8) / (float) HEAD_W, height * 0.24f / HEAD_H), 0.62f);
+        frameW = Math.min(width - 16, 270);
+        frameX = (width - frameW) / 2;
+        frameY = 4 + Math.round(HEAD_FRAME_TOP * k);
+        int frameBottom = height - 4 - Math.round(TAIL_H * k);
+        frameH = frameBottom - frameY;
+        left = frameX + Math.round(GREEN_L * k) + 4;
+        right = frameX + frameW - Math.round(GREEN_R * k) - 4;
+        top = frameY + Math.round(GREEN_T * k) + 3;
+        bottom = frameBottom - Math.round(GREEN_B * k) - 2;
+    }
+
+    private int listTop() {
+        return top + 28;
+    }
+
+    private int rowsPerPage() {
+        return Math.max(1, (bottom - 24 - listTop()) / ROW);
+    }
+
+    private int entries() {
+        return switch (tab) {
+            case SERVICES -> data.services().size();
+            case RULES -> data.rules().size();
+            case ITEMS -> data.items().size();
+        };
+    }
+
     @Override
     protected void init() {
-        int left = width / 2 - 200;
-        int right = width / 2 + 10;
-        int top = TOP;
-        int perPage = itemsPerPage();
+        layout();
+        int pages = Math.max(1, (entries() + rowsPerPage() - 1) / rowsPerPage());
+        page = Math.min(page, pages - 1);
         boolean open = data.open();
 
-        int y = top + 12;
-        for (ShopSyncPacket.ServiceOffer s : data.services()) {
-            String label = s.owned() ? capitalize(s.id()) + " (owned)" : capitalize(s.id()) + " - " + s.price() + " pts";
-            Button b = Button.builder(Component.literal(label), btn -> send(ShopActionPacket.Action.BUY, s.id()))
-                    .bounds(left, y, 190, 18).build();
-            b.active = open && !s.owned() && data.points() >= s.price();
-            addRenderableWidget(b);
-            y += ROW;
+        addRenderableWidget(new LcdButton(right - 12, top, 12, 11, Component.literal("x"), b -> onClose()));
+
+        int tabW = (right - left - 4) / 3;
+        Tab[] tabs = Tab.values();
+        String[] names = {"Services", "Rules", "Items"};
+        for (int i = 0; i < tabs.length; i++) {
+            Tab t = tabs[i];
+            addRenderableWidget(new LcdButton(left + i * (tabW + 2), top + 13, tabW, 12, Component.literal(names[i]), b -> {
+                tab = t;
+                lastTab = t;
+                page = 0;
+                rebuildWidgets();
+            }).selected(t == tab));
         }
 
-        y += 12;
-        for (ShopSyncPacket.RuleOffer r : data.rules()) {
-            String label = r.active() ? capitalize(r.id()) + " (in play)" : capitalize(r.id()) + " - " + data.ruleCost() + " pts";
-            Button b = Button.builder(Component.literal(label), btn -> send(ShopActionPacket.Action.RULE, r.id()))
-                    .bounds(left, y, 190, 18).tooltip(Tooltip.create(Component.literal(r.description()))).build();
-            b.active = open && !r.active() && data.points() >= data.ruleCost();
-            addRenderableWidget(b);
-            y += ROW;
-        }
-
-        List<ShopSyncPacket.ItemOffer> items = data.items();
+        int perPage = rowsPerPage();
         int from = page * perPage;
-        y = top + 12;
-        for (int i = from; i < Math.min(items.size(), from + perPage); i++) {
-            ShopSyncPacket.ItemOffer o = items.get(i);
-            Button b = Button.builder(Component.literal("Buy - " + o.price() + " pts"),
-                            btn -> send(ShopActionPacket.Action.BUY, Integer.toString(o.id())))
-                    .bounds(right + 110, y, 80, 18)
-                    .tooltip(Tooltip.create(o.stack().getHoverName())).build();
-            b.active = open && data.points() >= o.price();
+        int to = Math.min(entries(), from + perPage);
+        int bx = right - 56;
+        int y = listTop();
+        for (int i = from; i < to; i++) {
+            LcdButton b;
+            switch (tab) {
+                case SERVICES -> {
+                    ShopSyncPacket.ServiceOffer s = data.services().get(i);
+                    b = new LcdButton(bx, y + 2, 56, 14, Component.literal(s.owned() ? "Owned" : s.price() + " pts"),
+                            btn -> send(ShopActionPacket.Action.BUY, s.id()));
+                    b.active = open && !s.owned() && data.points() >= s.price();
+                }
+                case RULES -> {
+                    ShopSyncPacket.RuleOffer r = data.rules().get(i);
+                    b = new LcdButton(bx, y + 2, 56, 14, Component.literal(r.active() ? "In play" : data.ruleCost() + " pts"),
+                            btn -> send(ShopActionPacket.Action.RULE, r.id()));
+                    b.setTooltip(Tooltip.create(Component.literal(r.description())));
+                    b.active = open && !r.active() && data.points() >= data.ruleCost();
+                }
+                default -> {
+                    ShopSyncPacket.ItemOffer o = data.items().get(i);
+                    b = new LcdButton(bx, y + 2, 56, 14, Component.literal(o.price() + " pts"),
+                            btn -> send(ShopActionPacket.Action.BUY, Integer.toString(o.id())));
+                    b.setTooltip(Tooltip.create(o.stack().getHoverName()));
+                    b.active = open && data.points() >= o.price();
+                }
+            }
             addRenderableWidget(b);
             y += ROW;
         }
-        int pages = Math.max(1, (items.size() + perPage - 1) / perPage);
+
         if (pages > 1) {
-            int py = top + 12 + perPage * ROW + 4;
-            Button prev = Button.builder(Component.literal("<"), btn -> { page--; rebuildWidgets(); })
-                    .bounds(right, py, 20, 20).build();
+            int py = bottom - 24;
+            LcdButton prev = new LcdButton(left, py, 16, 12, Component.literal("<"), btn -> { page--; rebuildWidgets(); });
             prev.active = page > 0;
-            Button next = Button.builder(Component.literal(">"), btn -> { page++; rebuildWidgets(); })
-                    .bounds(right + 170, py, 20, 20).build();
+            LcdButton next = new LcdButton(right - 16, py, 16, 12, Component.literal(">"), btn -> { page++; rebuildWidgets(); });
             next.active = page < pages - 1;
             addRenderableWidget(prev);
             addRenderableWidget(next);
         }
-
-        addRenderableWidget(Button.builder(Component.literal("Close"), btn -> onClose())
-                .bounds(width - 66, 8, 58, 20).build());
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         renderBackground(g);
-        int left = width / 2 - 200;
-        int right = width / 2 + 10;
-        int top = TOP;
-        int perPage = itemsPerPage();
-        g.drawCenteredString(font, title, width / 2, 14, 0xFFAA00);
-        g.drawCenteredString(font, "Your points: " + data.points(), width / 2, 28, 0xFFFFFF);
+        drawKogane(g);
 
-        g.drawString(font, "Services (rest of event)", left, top, 0xAAAAAA);
-        g.drawString(font, "Rules", left, top + 12 + data.services().size() * ROW + 2, 0xAAAAAA);
-        g.drawString(font, "Items", right, top, 0xAAAAAA);
+        Component head = Component.literal("KOGANE'S SHOP").withStyle(ChatFormatting.BOLD);
+        g.drawString(font, head, left, top + 2, LcdButton.INK, false);
+        String pts = data.points() + " pts";
+        int px = right - 16 - font.width(pts);
+        CgTextures.icon(g, CgTextures.ICON_POINTS, px - 12, top, 10);
+        g.drawString(font, pts, px, top + 2, LcdButton.INK, false);
 
-        List<ShopSyncPacket.ItemOffer> items = data.items();
+        int perPage = rowsPerPage();
         int from = page * perPage;
-        int y = top + 12;
-        if (items.isEmpty()) {
-            g.drawString(font, "Nothing stocked yet.", right, y + 6, 0x777777);
+        int to = Math.min(entries(), from + perPage);
+        int nameW = right - 56 - 4 - left;
+        int y = listTop();
+        if (entries() == 0) {
+            g.drawString(font, tab == Tab.ITEMS ? "Nothing stocked yet." : "Nothing here.", left, y + 5, LcdButton.INK, false);
         }
-        for (int i = from; i < Math.min(items.size(), from + perPage); i++) {
-            ShopSyncPacket.ItemOffer o = items.get(i);
-            g.renderItem(o.stack(), right, y + 2);
-            g.renderItemDecorations(font, o.stack(), right, y + 2);
-            String name = font.plainSubstrByWidth(o.stack().getHoverName().getString(), 84);
-            g.drawString(font, name, right + 20, y + 6, 0xFFFFFF);
+        for (int i = from; i < to; i++) {
+            g.fill(left, y + ROW - 1, right, y + ROW, 0x33143300);
+            switch (tab) {
+                case SERVICES -> label(g, serviceName(data.services().get(i).id()), left, y, nameW);
+                case RULES -> label(g, capitalize(data.rules().get(i).id()), left, y, nameW);
+                default -> {
+                    ShopSyncPacket.ItemOffer o = data.items().get(i);
+                    g.renderItem(o.stack(), left, y + 1);
+                    g.renderItemDecorations(font, o.stack(), left, y + 1);
+                    label(g, o.stack().getHoverName().getString(), left + 19, y, nameW - 19);
+                }
+            }
             y += ROW;
         }
 
-        if (!data.open()) {
-            g.drawCenteredString(font, data.closedReason(), width / 2, height - 14, 0xFF5555);
-        } else if (!data.message().isEmpty()) {
-            g.drawCenteredString(font, data.message(), width / 2, height - 14, 0xFFFF55);
+        int pages = Math.max(1, (entries() + perPage - 1) / perPage);
+        if (pages > 1) {
+            String p = (page + 1) + "/" + pages;
+            g.drawString(font, p, (left + right - font.width(p)) / 2, bottom - 22, LcdButton.INK, false);
+        }
+        String line = !data.open() ? data.closedReason() : data.message();
+        if (!line.isEmpty()) {
+            line = font.plainSubstrByWidth(line, right - left);
+            g.drawString(font, line, (left + right - font.width(line)) / 2, bottom - 9, data.open() ? LcdButton.INK : ERROR, false);
         }
         super.render(g, mouseX, mouseY, partialTick);
+    }
+
+    private void label(GuiGraphics g, String text, int x, int y, int maxW) {
+        g.drawString(font, font.plainSubstrByWidth(text, maxW), x, y + 5, LcdButton.INK, false);
+    }
+
+    /** Frame (9-slice, so the screen can be any size), then the tail, then the head on top. */
+    private void drawKogane(GuiGraphics g) {
+        CgTextures.ensureFiltered();
+        int l = Math.round(SLICE_L * k), r = Math.round(SLICE_R * k), t = Math.round(SLICE_T * k), b = Math.round(SLICE_B * k);
+        int x0 = frameX, x1 = frameX + l, x2 = frameX + frameW - r, x3 = frameX + frameW;
+        int y0 = frameY, y1 = frameY + t, y2 = frameY + frameH - b, y3 = frameY + frameH;
+        int[] dx = {x0, x1, x2, x3};
+        int[] dy = {y0, y1, y2, y3};
+        int[] u = {0, SLICE_L, FRAME_W - SLICE_R, FRAME_W};
+        int[] v = {0, SLICE_T, FRAME_H - SLICE_B, FRAME_H};
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                slice(g, CgTextures.SHOP_FRAME, dx[i], dy[j], dx[i + 1] - dx[i], dy[j + 1] - dy[j],
+                        u[i], v[j], u[i + 1] - u[i], v[j + 1] - v[j]);
+            }
+        }
+        int tailW = Math.round(TAIL_W * k);
+        int tailX = Math.round(width / 2f - TAIL_CENTER * k);
+        CgTextures.whole(g, CgTextures.SHOP_TAIL, tailX, y3, tailW, Math.round(TAIL_H * k), TAIL_W, TAIL_H);
+        int headW = Math.round(HEAD_W * k);
+        CgTextures.whole(g, CgTextures.SHOP_HEAD, (width - headW) / 2, 4, headW, Math.round(HEAD_H * k), HEAD_W, HEAD_H);
+    }
+
+    private static void slice(GuiGraphics g, ResourceLocation tex, int x, int y, int w, int h, int u, int v, int uw, int vh) {
+        if (w > 0 && h > 0) {
+            g.blit(tex, x, y, w, h, u, v, uw, vh, FRAME_W, FRAME_H);
+        }
     }
 
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private static String serviceName(String id) {
+        return switch (id) {
+            case "killlog" -> "Kill log";
+            case "transfer" -> "Point transfers";
+            default -> capitalize(id);
+        };
     }
 
     private static String capitalize(String id) {

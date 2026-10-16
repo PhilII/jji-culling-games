@@ -17,7 +17,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
-/** Client-only registration: HUD overlay, shop key (K by default). */
+/** Client-only registration: HUD and announcement overlays, shop key (K by default). */
 public final class ClientSetup {
     static final KeyMapping OPEN_SHOP = new KeyMapping("key.cullinggames.shop",
             InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_K, "key.categories.cullinggames");
@@ -31,6 +31,7 @@ public final class ClientSetup {
         @SubscribeEvent
         public static void onOverlays(RegisterGuiOverlaysEvent event) {
             event.registerAbove(VanillaGuiOverlay.CHAT_PANEL.id(), "kogane", new HudOverlay());
+            event.registerAboveAll("announcements", new AnnouncementOverlay());
         }
 
         @SubscribeEvent
@@ -65,6 +66,7 @@ public final class ClientSetup {
         @SubscribeEvent
         public static void onLogout(ClientPlayerNetworkEvent.LoggingOut event) {
             ClientPackets.hud = HudSyncPacket.INACTIVE;
+            AnnouncementOverlay.clear();
         }
     }
 }
