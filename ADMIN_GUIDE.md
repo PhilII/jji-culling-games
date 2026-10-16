@@ -96,6 +96,31 @@ Change in game (saved to the file right away):
 | `longerTimerMinutes` | 10 | extra minutes from the longer_timer rule |
 | `moneyItem` | `lightmanscurrency:coin_copper` | cash-out item; empty turns cash-out off |
 | `moneyPerPoint` | 1 | items per point |
+| `rewardShopOpen` | true | reward shop open after the event |
+| `maxFragmentsPerEvent` | 2 | weapon fragments per player per event |
+
+## 6. Reward shop (after the event)
+When an event ends, every participant keeps the points they had left. Until the next event starts, they can spend them in **Kogane's reward shop**: press **K**, or type `/cg rewards`. Starting the next event wipes leftover points.
+
+Default rewards (added automatically when Jujutsu Craft is installed):
+- **Special Grade promotion** (220 pts): grants `jujutsucraft:sorcerer_grade_special`. Needs Grade 1, once per player, refused without charge if already Special Grade.
+- **Weapon fragments** (60 pts each) for the 7 Special Grade tools. A full set gives the real weapon: Inverted Spear of Heaven 6, Playful Cloud 4, Split Soul Katana 5, Black Rope 4, Kamutoke 6, Hiten 5, Sword of Extermination 6. Fragments are stored per player (not items, so they can't be traded or faked) and carry over between events. A player can buy at most 2 fragments per event (`maxFragmentsPerEvent`).
+
+Add your own:
+```
+/cg reward add item apples 15                      # hold the stack the reward gives
+/cg reward add command speed_boost 40 effect give %player% minecraft:speed 600 1
+/cg reward set speed_boost name Speed boost (10 min)
+/cg reward set apples perplayer 1                  # max per player per event
+/cg reward set speed_boost stock 5                 # max sold per event
+/cg reward set speed_boost once true               # once per player, ever
+/cg reward set speed_boost requires jujutsucraft:sorcerer_grade_2
+/cg reward set speed_boost icon                    # hold an item to use as the icon
+/cg reward list | remove <id> | defaults
+```
+`%player%` is replaced with the buyer's name. If a command fails, the player is not charged. A command reward can give a weapon with effects, e.g. `give %player% minecraft:netherite_sword{Enchantments:[{id:"sharpness",lvl:6}]}`.
+
+If a player's inventory is full, Kogane keeps the reward and hands it over when there is room (or at next login). Nothing is dropped on the ground. Check or fix fragments with `/cg reward fragments <player> [weapon] [count]`. Close the shop with `/cg config rewardShopOpen false`.
 
 ## Checklist for a first event
 1. Jar in `mods/`, server restarted.

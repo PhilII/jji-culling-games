@@ -30,6 +30,8 @@ public final class CgConfig {
     public static final ForgeConfigSpec.ConfigValue<String> MONEY_ITEM;
     public static final ForgeConfigSpec.IntValue MONEY_PER_POINT;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> WEAK_TARGETS_EXTRA;
+    public static final ForgeConfigSpec.BooleanValue REWARD_SHOP_OPEN;
+    public static final ForgeConfigSpec.IntValue MAX_FRAGMENTS_PER_EVENT;
 
     static {
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
@@ -88,6 +90,14 @@ public final class CgConfig {
                 .define("moneyItem", "lightmanscurrency:coin_copper");
         MONEY_PER_POINT = b.comment("How many of moneyItem one point is worth.")
                 .defineInRange("moneyPerPoint", 1, 1, 64);
+        b.pop();
+
+        b.push("rewards");
+        REWARD_SHOP_OPEN = b.comment("Kogane's reward shop is open after an event ends, until the next event starts.",
+                        "Players spend the points they had left. Set false to close it.")
+                .define("rewardShopOpen", true);
+        MAX_FRAGMENTS_PER_EVENT = b.comment("Weapon fragments one player may buy from the rewards of one event (all weapons together).")
+                .defineInRange("maxFragmentsPerEvent", 2, 0, 1000);
         b.pop();
 
         SPEC = b.build();

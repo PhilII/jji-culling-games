@@ -19,7 +19,7 @@ This file is the source of truth for the build. Every session starts by reading 
 | 4 | Timer + penalty + event lives | done | `step4/penalty` | `v0.4-penalty` |
 | 5 | Kogane + shop | done | `step5/kogane-shop` | `v0.5-kogane-shop` |
 | 6 | Client HUD + screens | done | `step6/client` | `v0.6-client` |
-| 7 | Polish + release (7b: reward shop) | in progress (0.10.0 pre-release on GitHub with JJK art, sounds and visible barriers; Red decides about the server) | `step7/release` | `v1.0.0` |
+| 7 | Polish + release (7b: reward shop) | in progress (0.11.0 pre-release on GitHub: JJK art, sounds, visible barriers, reward shop; Red decides about the server) | `step7/release` | `v1.0.0` |
 
 ## Decided
 
@@ -117,6 +117,8 @@ Red (16 Oct): leftover points are spent in a shop after the event, e.g. a Specia
 5. **Prices** (starting values, configurable in file and `/cg config`): supplies 1-25, mid 30-60, fragments 50-90, premium 200-240. Estimate: a normal player ends with 20-70 points, a top player 100-250. Tune after the first real event.
 6. **Cash-out**: 5 points = 1 copper coin, max 10 copper per player per event (both configurable). Lightman coin IDs: `lightmanscurrency:coin_copper/iron/gold/emerald/diamond/netherite` (default 10 of one tier = 1 of the next).
 7. **JJK flavour**: show the 8 canon rules (paraphrased) in the rules menu, bought rules continue from 9; Kogane lines from the research in announcements; admin guide suggests colony names (Tokyo No. 1, Tokyo No. 2, Sendai, Sakurajima verified; others marked unverified).
+
+**Status 17 Oct:** 1-4 built in 0.11.0 (reward shop, defaults, fragments, limits, pending delivery; GameTest `rewardShop`; Special Grade promotion checked in game: JJC sets PlayerLevel 20). Next: 5-7.
 
 Not covered yet: which weapon effects JJC supports (no answer; Red can add them as command rewards). Prices are estimates until a real event.
 

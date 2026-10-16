@@ -83,6 +83,8 @@ public final class CgCommands {
                                 .executes(c -> participant(c, false)))))
                 .then(pointsCommands())
                 .then(ConfigCommand.build())
+                .then(RewardCommand.rewards())
+                .then(RewardCommand.reward())
                 .then(Commands.literal("killlog")
                         .executes(c -> killLog(c, 10))
                         .then(Commands.argument("count", IntegerArgumentType.integer(1, 100))
@@ -507,6 +509,7 @@ public final class CgCommands {
         {"/cg leaderboard", "standings (buy it first)"},
         {"/cg killlog", "kill log (buy it first)"},
         {"/cg cashout <points>", "points to coins"},
+        {"/cg rewards", "Kogane's reward shop after the event"},
     };
 
     private static final String[][] ADMIN_HELP = {
@@ -519,6 +522,7 @@ public final class CgCommands {
         {"/cg shop add <price>", "sell the item in your hand; /cg shop remove <id>"},
         {"/cg killlog [count]", "kill proof"},
         {"/cg config [key] [value]", "show or change settings in game"},
+        {"/cg reward add item|command <id> <price>", "reward shop; also list, set, remove, defaults"},
     };
 
     private static int help(CommandContext<CommandSourceStack> c) {

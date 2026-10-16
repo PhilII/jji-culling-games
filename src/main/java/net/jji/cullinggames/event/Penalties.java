@@ -3,9 +3,11 @@ package net.jji.cullinggames.event;
 import java.util.ArrayList;
 import java.util.UUID;
 import net.jji.cullinggames.CullingGames;
+import net.jji.cullinggames.colony.ColonyService;
 import net.jji.cullinggames.compat.JujutsuCraft;
 import net.jji.cullinggames.config.CgConfig;
 import net.jji.cullinggames.network.AnnouncePacket;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -235,8 +237,12 @@ public final class Penalties {
 
     private static void sendToSpawn(MinecraftServer server, ServerPlayer player) {
         ServerLevel overworld = server.overworld();
-        var spawn = overworld.getSharedSpawnPos();
+        // The stored spawn height can be in the air (flat worlds, edited maps); land on solid ground instead.
+        BlockPos spawn = ColonyService.safeStand(overworld, overworld.getSharedSpawnPos());
+        player.stopRiding();
         player.teleportTo(overworld, spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5, player.getYRot(), player.getXRot());
+        player.setDeltaMovement(0, 0, 0);
+        player.fallDistance = 0;
     }
 
     @SubscribeEvent

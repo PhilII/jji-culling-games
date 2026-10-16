@@ -1,5 +1,6 @@
 package net.jji.cullinggames.client;
 
+import java.util.Arrays;
 import java.util.List;
 import net.jji.cullinggames.network.CgNetwork;
 import net.jji.cullinggames.network.ShopActionPacket;
@@ -17,7 +18,10 @@ import net.minecraft.resources.ResourceLocation;
  * the server decides and sends the refreshed shop back.
  */
 public final class ShopScreen extends Screen {
-    private enum Tab { SERVICES, RULES, ITEMS }
+    private enum Tab { SERVICES, RULES, ITEMS, REWARDS, FRAGMENTS }
+
+    private static final Tab[] EVENT_TABS = {Tab.SERVICES, Tab.RULES, Tab.ITEMS};
+    private static final Tab[] REWARD_TABS = {Tab.REWARDS, Tab.FRAGMENTS};
 
     // Texture sizes and slice borders, in texture pixels (see scripts/process_art.py).
     private static final int HEAD_W = 602, HEAD_H = 164, HEAD_FRAME_TOP = 148;
@@ -76,29 +80,43 @@ public final class ShopScreen extends Screen {
         return Math.max(1, (bottom - 24 - listTop()) / ROW);
     }
 
+    private Tab[] tabs() {
+        return data.rewardMode() ? REWARD_TABS : EVENT_TABS;
+    }
+
+    /** Rewards shown on the current tab: fragments on their own tab, everything else on Rewards. */
+    private List<ShopSyncPacket.RewardOffer> rewardOffers() {
+        boolean fragments = tab == Tab.FRAGMENTS;
+        return data.rewardOffers().stream().filter(o -> o.fragment() == fragments).toList();
+    }
+
     private int entries() {
         return switch (tab) {
             case SERVICES -> data.services().size();
             case RULES -> data.rules().size();
             case ITEMS -> data.items().size();
+            case REWARDS, FRAGMENTS -> rewardOffers().size();
         };
     }
 
     @Override
     protected void init() {
         layout();
+        if (!Arrays.asList(tabs()).contains(tab)) {
+            tab = tabs()[0];
+            page = 0;
+        }
         int pages = Math.max(1, (entries() + rowsPerPage() - 1) / rowsPerPage());
         page = Math.min(page, pages - 1);
         boolean open = data.open();
 
         addRenderableWidget(new LcdButton(right - 12, top, 12, 11, Component.literal("x"), b -> onClose()));
 
-        int tabW = (right - left - 4) / 3;
-        Tab[] tabs = Tab.values();
-        String[] names = {"Services", "Rules", "Items"};
+        Tab[] tabs = tabs();
+        int tabW = (right - left - 2 * (tabs.length - 1)) / tabs.length;
         for (int i = 0; i < tabs.length; i++) {
             Tab t = tabs[i];
-            addRenderableWidget(new LcdButton(left + i * (tabW + 2), top + 13, tabW, 12, Component.literal(names[i]), b -> {
+            addRenderableWidget(new LcdButton(left + i * (tabW + 2), top + 13, tabW, 12, Component.literal(capitalize(t.name().toLowerCase())), b -> {
                 tab = t;
                 lastTab = t;
                 page = 0;
@@ -126,6 +144,16 @@ public final class ShopScreen extends Screen {
                             btn -> send(ShopActionPacket.Action.RULE, r.id()));
                     b.setTooltip(Tooltip.create(Component.literal(r.description())));
                     b.active = open && !r.active() && data.points() >= data.ruleCost();
+                }
+                case REWARDS, FRAGMENTS -> {
+                    ShopSyncPacket.RewardOffer o = rewardOffers().get(i);
+                    boolean blocked = !o.blocked().isEmpty();
+                    String label = !blocked ? o.price() + " pts"
+                            : o.blocked().startsWith("Requires") ? "Locked" : o.blocked();
+                    b = new LcdButton(bx, y + 2, 56, 14, Component.literal(label),
+                            btn -> send(ShopActionPacket.Action.REWARD, o.id()));
+                    b.setTooltip(Tooltip.create(Component.literal(blocked ? o.blocked() : o.name())));
+                    b.active = open && !blocked && data.points() >= o.price();
                 }
                 default -> {
                     ShopSyncPacket.ItemOffer o = data.items().get(i);
@@ -155,7 +183,7 @@ public final class ShopScreen extends Screen {
         renderBackground(g);
         drawKogane(g);
 
-        Component head = Component.literal("KOGANE'S SHOP").withStyle(ChatFormatting.BOLD);
+        Component head = Component.literal(data.rewardMode() ? "KOGANE'S REWARDS" : "KOGANE'S SHOP").withStyle(ChatFormatting.BOLD);
         g.drawString(font, head, left, top + 2, LcdButton.INK, false);
         String pts = data.points() + " pts";
         int px = right - 16 - font.width(pts);
@@ -168,13 +196,19 @@ public final class ShopScreen extends Screen {
         int nameW = right - 56 - 4 - left;
         int y = listTop();
         if (entries() == 0) {
-            g.drawString(font, tab == Tab.ITEMS ? "Nothing stocked yet." : "Nothing here.", left, y + 5, LcdButton.INK, false);
+            g.drawString(font, tab == Tab.ITEMS || data.rewardMode() ? "Nothing stocked yet." : "Nothing here.", left, y + 5, LcdButton.INK, false);
         }
         for (int i = from; i < to; i++) {
             g.fill(left, y + ROW - 1, right, y + ROW, 0x33143300);
             switch (tab) {
                 case SERVICES -> label(g, serviceName(data.services().get(i).id()), left, y, nameW);
                 case RULES -> label(g, capitalize(data.rules().get(i).id()), left, y, nameW);
+                case REWARDS, FRAGMENTS -> {
+                    ShopSyncPacket.RewardOffer o = rewardOffers().get(i);
+                    g.renderItem(o.icon(), left, y + 1);
+                    String name = o.fragment() ? o.name() + "  " + o.have() + "/" + o.need() : o.name();
+                    label(g, name, left + 19, y, nameW - 19);
+                }
                 default -> {
                     ShopSyncPacket.ItemOffer o = data.items().get(i);
                     g.renderItem(o.stack(), left, y + 1);

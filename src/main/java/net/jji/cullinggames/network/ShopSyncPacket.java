@@ -4,15 +4,32 @@ import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
 
-/** Server → client: everything the shop screen shows. Sent when the screen opens and after every purchase. */
+/**
+ * Server → client: everything the shop screen shows. Sent when the screen opens and after every purchase.
+ * rewardMode = Kogane's reward shop after an event (rewardOffers); otherwise the event shop.
+ */
 public record ShopSyncPacket(int points, int ruleCost, String closedReason, String message,
-                             List<ItemOffer> items, List<ServiceOffer> services, List<RuleOffer> rules) {
+                             List<ItemOffer> items, List<ServiceOffer> services, List<RuleOffer> rules,
+                             boolean rewardMode, List<RewardOffer> rewardOffers) {
+
+    /** The event shop. */
+    public ShopSyncPacket(int points, int ruleCost, String closedReason, String message,
+                          List<ItemOffer> items, List<ServiceOffer> services, List<RuleOffer> rules) {
+        this(points, ruleCost, closedReason, message, items, services, rules, false, List.of());
+    }
 
     public record ItemOffer(int id, ItemStack stack, int price) {}
 
     public record ServiceOffer(String id, int price, boolean owned) {}
 
     public record RuleOffer(String id, String description, boolean active) {}
+
+    /**
+     * A reward. blocked = why it can't be bought ("" if it can, price aside). For fragments, have/need is the
+     * player's progress towards the weapon.
+     */
+    public record RewardOffer(String id, String name, ItemStack icon, int price, String blocked,
+                              boolean fragment, int have, int need) {}
 
     /** Empty closedReason = the shop is open for this player. */
     public boolean open() {
@@ -39,6 +56,17 @@ public record ShopSyncPacket(int points, int ruleCost, String closedReason, Stri
             b.writeUtf(o.description(), 256);
             b.writeBoolean(o.active());
         });
+        buf.writeBoolean(rewardMode);
+        buf.writeCollection(rewardOffers, (b, o) -> {
+            b.writeUtf(o.id(), 32);
+            b.writeUtf(o.name(), 64);
+            b.writeItem(o.icon());
+            b.writeVarInt(o.price());
+            b.writeUtf(o.blocked(), 64);
+            b.writeBoolean(o.fragment());
+            b.writeVarInt(o.have());
+            b.writeVarInt(o.need());
+        });
     }
 
     public static ShopSyncPacket decode(FriendlyByteBuf buf) {
@@ -49,6 +77,9 @@ public record ShopSyncPacket(int points, int ruleCost, String closedReason, Stri
         List<ItemOffer> items = buf.readList(b -> new ItemOffer(b.readVarInt(), b.readItem(), b.readVarInt()));
         List<ServiceOffer> services = buf.readList(b -> new ServiceOffer(b.readUtf(32), b.readVarInt(), b.readBoolean()));
         List<RuleOffer> rules = buf.readList(b -> new RuleOffer(b.readUtf(32), b.readUtf(256), b.readBoolean()));
-        return new ShopSyncPacket(points, ruleCost, closed, message, items, services, rules);
+        boolean rewardMode = buf.readBoolean();
+        List<RewardOffer> rewards = buf.readList(b -> new RewardOffer(b.readUtf(32), b.readUtf(64), b.readItem(),
+                b.readVarInt(), b.readUtf(64), b.readBoolean(), b.readVarInt(), b.readVarInt()));
+        return new ShopSyncPacket(points, ruleCost, closed, message, items, services, rules, rewardMode, rewards);
     }
 }
