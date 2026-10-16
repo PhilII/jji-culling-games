@@ -117,11 +117,11 @@ public final class ShopGameTests {
 
             // cash-out (Lightman's Currency may be missing in dev)
             Points.set(server, p1.getUUID(), 10);
-            Shop.Result cash = Shop.cashOut(server, p1, 3);
+            Shop.Result cash = Shop.cashOut(server, p1, 1);
             if (Shop.moneyItem() == null) {
                 check(h, !cash.ok() && state.points(p1.getUUID()) == 10, "no cash-out without the coin item");
             } else {
-                check(h, cash.ok() && state.points(p1.getUUID()) == 7, "cash-out takes points");
+                check(h, cash.ok() && state.points(p1.getUUID()) == 10 - CgConfig.POINTS_PER_COIN.get(), "cash-out takes points");
             }
 
             // saved state

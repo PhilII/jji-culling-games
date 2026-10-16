@@ -10,12 +10,17 @@ import net.minecraft.world.item.ItemStack;
  */
 public record ShopSyncPacket(int points, int ruleCost, String closedReason, String message,
                              List<ItemOffer> items, List<ServiceOffer> services, List<RuleOffer> rules,
-                             boolean rewardMode, List<RewardOffer> rewardOffers) {
+                             boolean rewardMode, List<RewardOffer> rewardOffers, CashOut cashOut) {
 
     /** The event shop. */
     public ShopSyncPacket(int points, int ruleCost, String closedReason, String message,
                           List<ItemOffer> items, List<ServiceOffer> services, List<RuleOffer> rules) {
-        this(points, ruleCost, closedReason, message, items, services, rules, false, List.of());
+        this(points, ruleCost, closedReason, message, items, services, rules, false, List.of(), CashOut.NONE);
+    }
+
+    /** Points → coins: price per coin and how many more this player may take this event (-1 = no limit). */
+    public record CashOut(boolean available, int pointsPerCoin, int coinsLeft) {
+        public static final CashOut NONE = new CashOut(false, 1, 0);
     }
 
     public record ItemOffer(int id, ItemStack stack, int price) {}
@@ -67,6 +72,9 @@ public record ShopSyncPacket(int points, int ruleCost, String closedReason, Stri
             b.writeVarInt(o.have());
             b.writeVarInt(o.need());
         });
+        buf.writeBoolean(cashOut.available());
+        buf.writeVarInt(cashOut.pointsPerCoin());
+        buf.writeInt(cashOut.coinsLeft());
     }
 
     public static ShopSyncPacket decode(FriendlyByteBuf buf) {
@@ -80,6 +88,7 @@ public record ShopSyncPacket(int points, int ruleCost, String closedReason, Stri
         boolean rewardMode = buf.readBoolean();
         List<RewardOffer> rewards = buf.readList(b -> new RewardOffer(b.readUtf(32), b.readUtf(64), b.readItem(),
                 b.readVarInt(), b.readUtf(64), b.readBoolean(), b.readVarInt(), b.readVarInt()));
-        return new ShopSyncPacket(points, ruleCost, closed, message, items, services, rules, rewardMode, rewards);
+        CashOut cashOut = new CashOut(buf.readBoolean(), buf.readVarInt(), buf.readInt());
+        return new ShopSyncPacket(points, ruleCost, closed, message, items, services, rules, rewardMode, rewards, cashOut);
     }
 }

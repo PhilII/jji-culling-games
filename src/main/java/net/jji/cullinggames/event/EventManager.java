@@ -49,8 +49,8 @@ public final class EventManager {
                 state.eventNumber(), state.participants().size(), penalty, lives);
         Kogane.broadcast(server, "The Culling Games have begun. Participants: " + state.participants().size() + ".");
         Kogane.announceAll(server, AnnouncePacket.Kind.START, "The Culling Games have begun!",
-                state.participants().size() + (state.participants().size() == 1 ? " player" : " players")
-                        + ". Earn points, or lose your technique.");
+                "Attention, players! The colonies are now active! " + state.participants().size()
+                        + (state.participants().size() == 1 ? " player." : " players."));
         return Result.OK;
     }
 
@@ -64,7 +64,8 @@ public final class EventManager {
         state.end();
         CullingGames.LOGGER.info("Culling Games #{} stopped", number);
         Kogane.broadcast(server, "The Culling Games are over.");
-        Kogane.announceAll(server, AnnouncePacket.Kind.END, "The Culling Games are over!", "Everyone has been restored.");
+        Kogane.announceAll(server, AnnouncePacket.Kind.END, "The Culling Games are over!",
+                "Further kills award no points! Spend what you have left in Kogane's reward shop (K).");
         return Result.OK;
     }
 

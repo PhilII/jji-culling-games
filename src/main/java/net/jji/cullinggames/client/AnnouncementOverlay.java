@@ -108,6 +108,9 @@ public final class AnnouncementOverlay implements IGuiOverlay {
             return;
         }
         RenderSystem.enableBlend();
+        // In front of the chat, which draws at a raised depth and would otherwise cover the popups.
+        g.pose().pushPose();
+        g.pose().translate(0, 0, 400);
         Font font = mc.font;
         int titleBottom = 0;
         if (title != null) {
@@ -123,6 +126,7 @@ public final class AnnouncementOverlay implements IGuiOverlay {
             drawBarrier(g, font, barrier, width, height);
         }
         g.setColor(1, 1, 1, 1);
+        g.pose().popPose();
         RenderSystem.disableBlend();
     }
 

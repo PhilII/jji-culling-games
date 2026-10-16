@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 import net.jji.cullinggames.config.CgConfig;
 import net.jji.cullinggames.network.AnnouncePacket;
+import net.jji.cullinggames.shop.RewardStore;
 import net.jji.cullinggames.shop.ShopStore;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -157,27 +158,48 @@ public final class Shop {
         return Result.ok("Sent " + amount + " points to " + toName + ".");
     }
 
-    /** Points to Lightman's Currency coins (one-way). Disabled if the coin item doesn't exist. */
-    public static Result cashOut(MinecraftServer server, ServerPlayer player, int amount) {
+    /**
+     * Points to Lightman's Currency coins (one-way), pointsPerCoin points each, at most maxCoinsPerEvent per player
+     * per event. Open to players still in a running event, and in the reward shop after it. Disabled if the coin
+     * item doesn't exist.
+     */
+    public static Result cashOut(MinecraftServer server, ServerPlayer player, int coins) {
         EventState state = EventState.get(server);
-        Result denied = gate(state, player);
-        if (denied != null) {
-            return denied;
+        UUID id = player.getUUID();
+        if (state.phase().isActive()) {
+            Result denied = gate(state, player);
+            if (denied != null) {
+                return denied;
+            }
+        } else {
+            String closed = Rewards.closedReason(state, id);
+            if (!closed.isEmpty()) {
+                return Result.no(closed);
+            }
         }
         Item coin = moneyItem();
         if (coin == null) {
             return Result.no("Cash-out is not available on this server.");
         }
-        if (!pay(state, player.getUUID(), amount)) {
-            return Result.no("You only have " + state.points(player.getUUID()) + " points.");
+        RewardStore store = RewardStore.get(server);
+        store.useEvent(state.eventNumber());
+        int max = CgConfig.MAX_COINS_PER_EVENT.get();
+        if (max > 0 && store.coinsThisEvent(id) + coins > max) {
+            int left = Math.max(0, max - store.coinsThisEvent(id));
+            return Result.no("You can cash out " + left + " more coin" + (left == 1 ? "" : "s") + " this event (max " + max + ").");
         }
-        int total = amount * CgConfig.MONEY_PER_POINT.get();
+        int cost = coins * CgConfig.POINTS_PER_COIN.get();
+        if (!pay(state, id, cost)) {
+            return Result.no(coins + (coins == 1 ? " coin costs " : " coins cost ") + cost + " points. You have " + state.points(id) + ".");
+        }
+        store.addCoins(id, coins);
+        int total = coins;
         while (total > 0) {
             int n = Math.min(total, new ItemStack(coin).getMaxStackSize());
-            give(player, new ItemStack(coin, n));
+            Rewards.deliver(store, player, new ItemStack(coin, n));
             total -= n;
         }
-        return Result.ok("Cashed out " + amount + " points.");
+        return Result.ok("Cashed out " + cost + " points for " + coins + (coins == 1 ? " coin." : " coins."));
     }
 
     static Item moneyItem() {

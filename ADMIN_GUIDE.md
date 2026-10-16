@@ -24,6 +24,8 @@ Stand in the dimension you want, then:
 
 Colonies are saved with the world and survive restarts.
 
+Name ideas from the anime and manga: **Tokyo No. 1**, **Tokyo No. 2**, **Sendai**, **Sakurajima** (all confirmed). Unconfirmed but used by fans: Lake Gosho (Iwate), Aomori, Aichi, Kyoto, Osaka, Hiroshima. Names are one word in the command, e.g. `tokyo_no_1` or `Sendai`.
+
 ## 3. Stock Kogane's shop (optional)
 Hold the item (with the stack size you want to sell) and run:
 ```
@@ -34,9 +36,9 @@ That sells the held stack for 50 points. `/cg shop` lists items with their numbe
 Always in the shop, priced in the config:
 - **Services**: leaderboard, transfer, kill log (100 points each, unlocked for the rest of the event).
 - **Rules** (100 points, apply to everyone): reveal_points, double_points, longer_timer (+10 min), free_transfers.
-- **Cash-out**: points to Lightman's coins (1 copper per point by default). One way only.
+- **Cash-out**: points to Lightman's coins, 5 points per copper coin, at most 10 coins per player per event (`pointsPerCoin`, `maxCoinsPerEvent`). One way only. Works during the event and in the reward shop after it (Coins tab, or `/cg cashout <coins>`).
 
-The shop, rules and cash-out only work **while the event runs**. Points are cleared when the next event starts, so warn players to spend them.
+The event shop and rules only work **while the event runs**. Leftover points go to the reward shop after the event (section 6) and are cleared when the next event starts.
 
 ## 4. Run an event
 ```
@@ -95,16 +97,18 @@ Change in game (saved to the file right away):
 | `leaderboardPrice` / `transferPrice` / `killLogPrice` | 100 | service prices |
 | `longerTimerMinutes` | 10 | extra minutes from the longer_timer rule |
 | `moneyItem` | `lightmanscurrency:coin_copper` | cash-out item; empty turns cash-out off |
-| `moneyPerPoint` | 1 | items per point |
+| `pointsPerCoin` | 5 | points per coin when cashing out |
+| `maxCoinsPerEvent` | 10 | coins per player per event (0 = no limit) |
 | `rewardShopOpen` | true | reward shop open after the event |
 | `maxFragmentsPerEvent` | 2 | weapon fragments per player per event |
+| `specialGradePrice` / `fragmentPrice` | 220 / 60 | prices of the default rewards (until set with `/cg reward set`) |
 
 ## 6. Reward shop (after the event)
 When an event ends, every participant keeps the points they had left. Until the next event starts, they can spend them in **Kogane's reward shop**: press **K**, or type `/cg rewards`. Starting the next event wipes leftover points.
 
 Default rewards (added automatically when Jujutsu Craft is installed):
-- **Special Grade promotion** (220 pts): grants `jujutsucraft:sorcerer_grade_special`. Needs Grade 1, once per player, refused without charge if already Special Grade.
-- **Weapon fragments** (60 pts each) for the 7 Special Grade tools. A full set gives the real weapon: Inverted Spear of Heaven 6, Playful Cloud 4, Split Soul Katana 5, Black Rope 4, Kamutoke 6, Hiten 5, Sword of Extermination 6. Fragments are stored per player (not items, so they can't be traded or faked) and carry over between events. A player can buy at most 2 fragments per event (`maxFragmentsPerEvent`).
+- **Special Grade promotion** (220 pts, `specialGradePrice`): grants `jujutsucraft:sorcerer_grade_special`. Needs Grade 1, once per player, refused without charge if already Special Grade.
+- **Weapon fragments** (60 pts each, `fragmentPrice`) for the 7 Special Grade tools. A full set gives the real weapon: Inverted Spear of Heaven 6, Playful Cloud 4, Split Soul Katana 5, Black Rope 4, Kamutoke 6, Hiten 5, Sword of Extermination 6. Fragments are stored per player (not items, so they can't be traded or faked) and carry over between events. A player can buy at most 2 fragments per event (`maxFragmentsPerEvent`).
 
 Add your own:
 ```

@@ -71,8 +71,14 @@ public final class Views {
             offers.add(new ShopSyncPacket.RewardOffer(r.id(), r.name(), r.stack(), r.price(),
                     Rewards.blocked(server, store, player, r), fragment, have, fragment ? r.fragmentsNeeded() : 0));
         }
+        int max = CgConfig.MAX_COINS_PER_EVENT.get();
+        ShopSyncPacket.CashOut cashOut = new ShopSyncPacket.CashOut(Shop.moneyItem() != null, CgConfig.POINTS_PER_COIN.get(),
+                max == 0 ? -1 : Math.max(0, max - store.coinsThisEvent(id)));
+        if (message.isEmpty()) {
+            message = "Welcome to the reward exchange!";
+        }
         return new ShopSyncPacket(state.points(id), 0, Rewards.closedReason(state, id), message,
-                List.of(), List.of(), List.of(), true, offers);
+                List.of(), List.of(), List.of(), true, offers, cashOut);
     }
 
     /** Runs a client shop action and returns the refreshed shop for that player. */
@@ -102,6 +108,13 @@ public final class Views {
                 message = rule == null ? "Unknown rule." : Shop.addRule(server, player, rule).message();
             }
             case REWARD -> message = Rewards.buy(server, player, action.id()).message();
+            case CASHOUT -> {
+                try {
+                    message = Shop.cashOut(server, player, Integer.parseInt(action.id())).message();
+                } catch (NumberFormatException e) {
+                    message = "Unknown amount.";
+                }
+            }
             case OPEN -> Rewards.deliverPending(server, player);
         }
         return shop(server, player, message);

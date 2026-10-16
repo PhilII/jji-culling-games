@@ -28,10 +28,13 @@ public final class CgConfig {
     public static final ForgeConfigSpec.IntValue KILLLOG_PRICE;
     public static final ForgeConfigSpec.IntValue LONGER_TIMER_MINUTES;
     public static final ForgeConfigSpec.ConfigValue<String> MONEY_ITEM;
-    public static final ForgeConfigSpec.IntValue MONEY_PER_POINT;
+    public static final ForgeConfigSpec.IntValue POINTS_PER_COIN;
+    public static final ForgeConfigSpec.IntValue MAX_COINS_PER_EVENT;
     public static final ForgeConfigSpec.ConfigValue<List<? extends String>> WEAK_TARGETS_EXTRA;
     public static final ForgeConfigSpec.BooleanValue REWARD_SHOP_OPEN;
     public static final ForgeConfigSpec.IntValue MAX_FRAGMENTS_PER_EVENT;
+    public static final ForgeConfigSpec.IntValue SPECIAL_GRADE_PRICE;
+    public static final ForgeConfigSpec.IntValue FRAGMENT_PRICE;
 
     static {
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
@@ -88,8 +91,10 @@ public final class CgConfig {
                 .defineInRange("longerTimerMinutes", 10, 1, 24 * 60);
         MONEY_ITEM = b.comment("Item Kogane pays out when points are cashed out (Lightman's Currency coin). Empty disables cash-out.")
                 .define("moneyItem", "lightmanscurrency:coin_copper");
-        MONEY_PER_POINT = b.comment("How many of moneyItem one point is worth.")
-                .defineInRange("moneyPerPoint", 1, 1, 64);
+        POINTS_PER_COIN = b.comment("Points per moneyItem when cashing out. Kept high so coins don't replace the rewards.")
+                .defineInRange("pointsPerCoin", 5, 1, 100000);
+        MAX_COINS_PER_EVENT = b.comment("Coins one player may cash out per event (during it and in the reward shop after it). 0 = no limit.")
+                .defineInRange("maxCoinsPerEvent", 10, 0, 1000000);
         b.pop();
 
         b.push("rewards");
@@ -98,6 +103,10 @@ public final class CgConfig {
                 .define("rewardShopOpen", true);
         MAX_FRAGMENTS_PER_EVENT = b.comment("Weapon fragments one player may buy from the rewards of one event (all weapons together).")
                 .defineInRange("maxFragmentsPerEvent", 2, 0, 1000);
+        SPECIAL_GRADE_PRICE = b.comment("Price of the default Special Grade promotion (unless changed with /cg reward set).")
+                .defineInRange("specialGradePrice", 220, 0, 1000000);
+        FRAGMENT_PRICE = b.comment("Price of each default weapon fragment (unless changed with /cg reward set).")
+                .defineInRange("fragmentPrice", 60, 0, 1000000);
         b.pop();
 
         SPEC = b.build();

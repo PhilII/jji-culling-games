@@ -31,8 +31,9 @@ final class ConfigCommand {
                 CgConfig.KILL_STEAL_MODE, CgConfig.KILL_STEAL_FLAT, CgConfig.KILL_STEAL_PERCENT,
                 CgConfig.RULE_COST, CgConfig.WEAK_TARGETS_ALL_HOSTILE,
                 CgConfig.LEADERBOARD_PRICE, CgConfig.TRANSFER_PRICE, CgConfig.KILLLOG_PRICE,
-                CgConfig.LONGER_TIMER_MINUTES, CgConfig.MONEY_ITEM, CgConfig.MONEY_PER_POINT,
-                CgConfig.REWARD_SHOP_OPEN, CgConfig.MAX_FRAGMENTS_PER_EVENT}) {
+                CgConfig.LONGER_TIMER_MINUTES, CgConfig.MONEY_ITEM, CgConfig.POINTS_PER_COIN,
+                CgConfig.MAX_COINS_PER_EVENT, CgConfig.REWARD_SHOP_OPEN, CgConfig.MAX_FRAGMENTS_PER_EVENT,
+                CgConfig.SPECIAL_GRADE_PRICE, CgConfig.FRAGMENT_PRICE}) {
             m.put(v.getPath().get(v.getPath().size() - 1), v);
         }
         return m;

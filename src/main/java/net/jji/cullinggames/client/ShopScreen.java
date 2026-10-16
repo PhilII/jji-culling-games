@@ -2,6 +2,7 @@ package net.jji.cullinggames.client;
 
 import java.util.Arrays;
 import java.util.List;
+import net.jji.cullinggames.event.CanonRules;
 import net.jji.cullinggames.network.CgNetwork;
 import net.jji.cullinggames.network.ShopActionPacket;
 import net.jji.cullinggames.network.ShopSyncPacket;
@@ -10,7 +11,12 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Kogane's shop, drawn as Kogane with its menu open: head and wings on top, the body as a green screen,
@@ -18,10 +24,12 @@ import net.minecraft.resources.ResourceLocation;
  * the server decides and sends the refreshed shop back.
  */
 public final class ShopScreen extends Screen {
-    private enum Tab { SERVICES, RULES, ITEMS, REWARDS, FRAGMENTS }
+    private enum Tab { SERVICES, RULES, ITEMS, REWARDS, FRAGMENTS, COINS }
 
     private static final Tab[] EVENT_TABS = {Tab.SERVICES, Tab.RULES, Tab.ITEMS};
-    private static final Tab[] REWARD_TABS = {Tab.REWARDS, Tab.FRAGMENTS};
+    private static final Tab[] REWARD_TABS = {Tab.REWARDS, Tab.FRAGMENTS, Tab.COINS};
+    /** Coin amounts offered on the Coins tab. */
+    private static final int[] COIN_AMOUNTS = {1, 5, 10};
 
     // Texture sizes and slice borders, in texture pixels (see scripts/process_art.py).
     private static final int HEAD_W = 602, HEAD_H = 164, HEAD_FRAME_TOP = 148;
@@ -35,6 +43,8 @@ public final class ShopScreen extends Screen {
     private static final int ERROR = 0xFF7A0000;
 
     private static Tab lastTab = Tab.SERVICES;
+    /** Lightman's copper coin when installed, else a copper ingot. */
+    private static final ItemStack COIN = coinIcon();
 
     private ShopSyncPacket data;
     private Tab tab = lastTab;
@@ -93,9 +103,10 @@ public final class ShopScreen extends Screen {
     private int entries() {
         return switch (tab) {
             case SERVICES -> data.services().size();
-            case RULES -> data.rules().size();
+            case RULES -> data.rules().size() + 1; // row 0: the original rules 1-8
             case ITEMS -> data.items().size();
             case REWARDS, FRAGMENTS -> rewardOffers().size();
+            case COINS -> data.cashOut().available() ? COIN_AMOUNTS.length : 0;
         };
     }
 
@@ -139,7 +150,12 @@ public final class ShopScreen extends Screen {
                     b.active = open && !s.owned() && data.points() >= s.price();
                 }
                 case RULES -> {
-                    ShopSyncPacket.RuleOffer r = data.rules().get(i);
+                    if (i == 0) {
+                        b = new LcdButton(bx, y + 2, 56, 14, Component.literal("Read"), btn -> { });
+                        b.setTooltip(Tooltip.create(canonRules()));
+                        break;
+                    }
+                    ShopSyncPacket.RuleOffer r = data.rules().get(i - 1);
                     b = new LcdButton(bx, y + 2, 56, 14, Component.literal(r.active() ? "In play" : data.ruleCost() + " pts"),
                             btn -> send(ShopActionPacket.Action.RULE, r.id()));
                     b.setTooltip(Tooltip.create(Component.literal(r.description())));
@@ -148,12 +164,22 @@ public final class ShopScreen extends Screen {
                 case REWARDS, FRAGMENTS -> {
                     ShopSyncPacket.RewardOffer o = rewardOffers().get(i);
                     boolean blocked = !o.blocked().isEmpty();
-                    String label = !blocked ? o.price() + " pts"
-                            : o.blocked().startsWith("Requires") ? "Locked" : o.blocked();
+                    String label = !blocked ? o.price() + " pts" : shortReason(o.blocked());
                     b = new LcdButton(bx, y + 2, 56, 14, Component.literal(label),
                             btn -> send(ShopActionPacket.Action.REWARD, o.id()));
                     b.setTooltip(Tooltip.create(Component.literal(blocked ? o.blocked() : o.name())));
                     b.active = open && !blocked && data.points() >= o.price();
+                }
+                case COINS -> {
+                    int coins = COIN_AMOUNTS[i];
+                    int cost = coins * data.cashOut().pointsPerCoin();
+                    int left = data.cashOut().coinsLeft();
+                    boolean capped = left >= 0 && coins > left;
+                    b = new LcdButton(bx, y + 2, 56, 14, Component.literal(capped ? "Limit" : cost + " pts"),
+                            btn -> send(ShopActionPacket.Action.CASHOUT, Integer.toString(coins)));
+                    b.setTooltip(Tooltip.create(Component.literal(left < 0 ? "No limit"
+                            : left + (left == 1 ? " coin" : " coins") + " left this event")));
+                    b.active = open && !capped && data.points() >= cost;
                 }
                 default -> {
                     ShopSyncPacket.ItemOffer o = data.items().get(i);
@@ -196,13 +222,18 @@ public final class ShopScreen extends Screen {
         int nameW = right - 56 - 4 - left;
         int y = listTop();
         if (entries() == 0) {
-            g.drawString(font, tab == Tab.ITEMS || data.rewardMode() ? "Nothing stocked yet." : "Nothing here.", left, y + 5, LcdButton.INK, false);
+            String empty = tab == Tab.COINS ? "Cash-out is not available." : tab == Tab.ITEMS || data.rewardMode() ? "Nothing stocked yet." : "Nothing here.";
+            g.drawString(font, empty, left, y + 5, LcdButton.INK, false);
         }
         for (int i = from; i < to; i++) {
             g.fill(left, y + ROW - 1, right, y + ROW, 0x33143300);
             switch (tab) {
                 case SERVICES -> label(g, serviceName(data.services().get(i).id()), left, y, nameW);
-                case RULES -> label(g, capitalize(data.rules().get(i).id()), left, y, nameW);
+                case RULES -> label(g, i == 0 ? "Rules 1-8 (original)" : capitalize(data.rules().get(i - 1).id()), left, y, nameW);
+                case COINS -> {
+                    g.renderItem(COIN, left, y + 1);
+                    label(g, COIN_AMOUNTS[i] + (COIN_AMOUNTS[i] == 1 ? " coin" : " coins"), left + 19, y, nameW - 19);
+                }
                 case REWARDS, FRAGMENTS -> {
                     ShopSyncPacket.RewardOffer o = rewardOffers().get(i);
                     g.renderItem(o.icon(), left, y + 1);
@@ -276,6 +307,32 @@ public final class ShopScreen extends Screen {
             case "transfer" -> "Point transfers";
             default -> capitalize(id);
         };
+    }
+
+    /** Button-sized version of why a reward can't be bought; the tooltip has the full text. */
+    private static String shortReason(String reason) {
+        if (reason.startsWith("Requires")) {
+            return "Locked";
+        }
+        return switch (reason) {
+            case "Already claimed" -> "Claimed";
+            case "Already have it" -> "Owned";
+            case "Limit reached", "Fragment limit reached" -> "Limit";
+            default -> reason;
+        };
+    }
+
+    private static Component canonRules() {
+        MutableComponent text = Component.literal("The Culling Game rules").withStyle(ChatFormatting.BOLD);
+        for (int i = 0; i < CanonRules.RULES.size(); i++) {
+            text.append(Component.literal("\n" + (i + 1) + ". " + CanonRules.RULES.get(i)).withStyle(ChatFormatting.RESET));
+        }
+        return text.append(Component.literal("\n" + CanonRules.SERVER_NOTE).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
+    }
+
+    private static ItemStack coinIcon() {
+        Item coin = ForgeRegistries.ITEMS.getValue(ResourceLocation.fromNamespaceAndPath("lightmanscurrency", "coin_copper"));
+        return new ItemStack(coin == null || coin == Items.AIR ? Items.COPPER_INGOT : coin);
     }
 
     private static String capitalize(String id) {

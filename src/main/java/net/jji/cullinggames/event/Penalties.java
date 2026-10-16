@@ -85,20 +85,21 @@ public final class Penalties {
             applyPenalty(server, state, player);
             return;
         }
-        warnIfDue(player, limit - since, CgConfig.FIRST_WARNING_MINUTES.get());
-        warnIfDue(player, limit - since, CgConfig.FINAL_WARNING_MINUTES.get());
+        warnIfDue(state, player, limit - since, CgConfig.FIRST_WARNING_MINUTES.get());
+        warnIfDue(state, player, limit - since, CgConfig.FINAL_WARNING_MINUTES.get());
     }
 
     /** Warns in the one-second window when exactly `minutes` are left. */
-    private static void warnIfDue(ServerPlayer player, long ticksLeft, int minutes) {
+    private static void warnIfDue(EventState state, ServerPlayer player, long ticksLeft, int minutes) {
         long at = (long) minutes * TICKS_PER_MINUTE;
         if (minutes > 0 && ticksLeft <= at && ticksLeft > at - 20) {
             Kogane.tell(player, minutes + (minutes == 1 ? " minute" : " minutes")
                     + " left to change your points, or face the penalty.");
             player.displayClientMessage(Kogane.line(minutes + " min left to score"), true);
             Kogane.cue(player, Kogane.Cue.WARNING);
+            String what = state.penalty() == PenaltyMode.LOSE_LIFE ? "you lose a life!" : "your technique is sealed!";
             Kogane.announce(player, AnnouncePacket.Kind.WARNING, minutes + (minutes == 1 ? " minute left!" : " minutes left!"),
-                    "Change your points, or face the penalty.");
+                    (minutes == 1 ? "One minute remains" : minutes + " minutes remain") + " before " + what);
         }
     }
 
@@ -126,7 +127,7 @@ public final class Penalties {
                     player.getGameProfile().getName());
         }
         Kogane.tell(player, "Your points did not change in time. Your cursed technique is sealed until you score.");
-        Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "Technique sealed!", "Your points did not change. Score to unseal.", "seal");
+        Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "Technique sealed!", "No score change detected! Technique access suspended! Score to unseal.", "seal");
         Kogane.cue(player, Kogane.Cue.PENALTY);
     }
 
@@ -147,7 +148,7 @@ public final class Penalties {
         if (announce) {
             Kogane.tell(player, "Your cursed technique is unsealed.");
             Kogane.cue(player, Kogane.Cue.GOOD);
-            Kogane.announce(player, AnnouncePacket.Kind.GOOD, "Technique unsealed", "Your cursed energy is back.");
+            Kogane.announce(player, AnnouncePacket.Kind.GOOD, "Technique unsealed", "Points acquired! Your technique is available again!");
         }
     }
 
@@ -176,7 +177,8 @@ public final class Penalties {
         int left = state.loseLife(player.getUUID());
         if (left > 0) {
             Kogane.tell(player, left + (left == 1 ? " life" : " lives") + " left.");
-            Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "Life lost!", left + (left == 1 ? " life" : " lives") + " left.", "life_lost");
+            Kogane.announce(player, AnnouncePacket.Kind.PENALTY, "Life lost!",
+                    left == 1 ? "One life remaining! Please spend it carefully!" : left + " lives left.", "life_lost");
             Kogane.cue(player, Kogane.Cue.PENALTY);
             return;
         }
