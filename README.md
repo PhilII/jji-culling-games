@@ -10,7 +10,7 @@ Status: pre-release, being tested before it goes live on the server.
 - **Points**: kills give points (players: 5 from Kogane plus 5 taken from the victim; hostile mobs: 1; all configurable). Shikigami kills count for their summoner; summons are never worth points. Every kill is logged.
 - **Penalty**: if a player's points don't go up within the timer (default 19 minutes, warnings at 5 and 1), the admin-chosen penalty applies: their cursed technique is sealed (cursed energy drained) until they score again, or they lose an event life. At 0 lives they become a spectator. Everyone is restored when the event ends.
 - **Kogane's shop**: admin-stocked items, a leaderboard, point transfers, kill-log access, rules that change the event (100 points each), and one-way cash-out to Lightman's Currency coins.
-- **Client**: a HUD with your own points, timer, colony and lives, Kogane's shop screen (key **K**), and on-screen announcements (title card at start and end, rule banner, Kogane warnings, barrier warning). Players without the mod can still join and get chat and a bossbar instead. Clients with the mod must run the same version as the server.
+- **Client**: a HUD with your own points, timer, colony and lives, Kogane's shop screen (key **K**), on-screen announcements (title card at start and end, rule banner, Kogane warnings, barrier warning) and custom sounds. Players without the mod can still join and get chat and a bossbar instead. Clients with the mod must run the same version as the server.
 
 ![Event start](docs/screenshots/step7-start.png)
 ![Kogane's shop](docs/screenshots/step7-shop.png)

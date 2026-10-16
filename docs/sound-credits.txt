@@ -1,0 +1,67 @@
+CULLING GAME - ORIGINAL SYNTHESIZED SOUND EFFECTS
+Created: 2026-10-16
+Creator: OpenAI Codex, generated for this project.
+
+PROVENANCE AND PERMISSION
+All twelve recordings were synthesized from scratch for this request using
+mathematical oscillators, deterministic pseudorandom noise, filters, envelopes,
+modal resonators and short delay reflections. No external sound recordings,
+sample packs, anime/game/film audio, voices, speech or music were used.
+The points cue uses the requested two rising notes; the warning and shop cues
+use brief functional pitches, not musical melodies.
+
+These are original generated deliverables for your use, modification and
+redistribution, including as embedded assets in a publicly distributed mod.
+No third-party sample license or attribution obligation applies. Attribution
+to Codex is optional. Source URL: not applicable (original local synthesis).
+No claim of affiliation with or endorsement by any franchise is made.
+
+Tools: Python, NumPy, SciPy, SoundFile, pyloudnorm, FFmpeg/libvorbis.
+These tools processed signals; no library's audio assets were incorporated.
+Render: 48,000 Hz, mono. Ogg Vorbis quality 6, from 24-bit PCM intermediates.
+Measured after decoding the final OGGs; four-times oversampling for peak checks.
+Revision: all twelve cues now use longer, smooth raised-cosine fade-outs.
+Fade lengths: start 1.65 s; end 1.80 s; rule 0.90 s; kogane 0.36 s;
+warning 0.65 s; seal 0.75 s; unseal 0.75 s; life_lost 0.80 s;
+out 1.10 s; barrier 0.60 s; points 0.32 s; shop 0.45 s.
+
+PER-FILE PRODUCTION CREDITS
+Each entry: creator OpenAI Codex; original synthesis; no sourced material;
+source URL/third-party author/license: not applicable; permission as above.
+
+start.ogg
+5.60 s. Inharmonic low bell modes with beating partials; two synthesized membrane/taiko impacts at 1.23 and 2.37 s; rising detuned low drone and filtered air, now ending with a smooth 1.65-second fade.
+
+end.ogg
+5.80 s. FM-excited inharmonic gong modes, long decays and diffuse mono reflections; distant low-pass sub impact at 1.22 s; filtered dark wind fading out.
+
+rule.ogg
+2.55 s. Clustered high-pass noise impulses form the paper/talisman snap; high modal bell at 0.17 s; quiet inharmonic shimmer.
+
+kogane.ogg
+0.96 s. Short downward-pitched soft pop; five windowed noise puffs make the wing flutter; faint metallic overtones add an eerie edge.
+
+warning.ogg
+1.80 s. Two struck metallic resonators at 670 and 870 Hz, separated by 0.47 s, with a low decaying rumble.
+
+seal.ogg
+2.70 s. Increasing filtered noise and a falling oscillator create an inward pull, with crackling impulses; clustered metal modes and a low membrane impact clamp shut at about 1.45 s.
+
+unseal.ogg
+2.10 s. Short metallic chain-break cluster and crackle; low energy burst, swelling broadband whoosh and bright inharmonic shimmer tail.
+
+life_lost.ogg
+2.15 s. One heartbeat gesture with a softer secondary valve pulse; a deep pitch-decaying boom and thin 1780 Hz ringing tail.
+
+out.ogg
+3.05 s. Dense randomized glass-like resonant shards and sharp noise fractures; 37 Hz impact with audible upper harmonics; cold filtered wind.
+
+barrier.ogg
+1.50 s. Low-pass membrane thud; frequency-modulated electric hum and amplitude-modulated noise produce a warped force-field ripple.
+
+points.ogg
+0.79 s. Two quick struck coin resonators at 1175 and 1568 Hz, 0.12 s apart, with emphasized attacks and a small bright tail.
+
+shop.ogg
+1.06 s. Three short decaying digital boot blips, a brief switch transient, and a soft 100 Hz CRT-style hum with filtered noise.
+

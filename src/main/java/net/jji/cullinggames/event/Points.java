@@ -72,6 +72,7 @@ public final class Points {
         int total = add(server, killer.getUUID(), award);
         Kogane.tell(killer, "+" + award + " points" + (stolen > 0 ? " (" + stolen + " taken from " + victimName + ")" : "")
                 + ". You have " + total + ".");
+        Kogane.sound(killer, "points");
         CullingGames.LOGGER.debug("{} killed {} for {} points", killer.getGameProfile().getName(), victimName, award);
     }
 
