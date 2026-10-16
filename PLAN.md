@@ -19,7 +19,7 @@ This file is the source of truth for the build. Every session starts by reading 
 | 4 | Timer + penalty + event lives | done | `step4/penalty` | `v0.4-penalty` |
 | 5 | Kogane + shop | done | `step5/kogane-shop` | `v0.5-kogane-shop` |
 | 6 | Client HUD + screens | done | `step6/client` | `v0.6-client` |
-| 7 | Polish + release | in progress (0.7.0 pre-release on GitHub; Red decides about the server) | `step7/release` | `v1.0.0` |
+| 7 | Polish + release | in progress (0.7.1 pre-release on GitHub; Red decides about the server) | `step7/release` | `v1.0.0` |
 
 ## Decided
 
@@ -79,7 +79,7 @@ Goal: Kogane runs the event and sells things for points.
 - Kogane as placeholder: chat prefix, titles, bossbar (event time left, own points).
 - Shop GUI: admins add items with point prices (`/cg shop add|remove|list`).
 - Buyables: leaderboard view, point transfer, kill-log access, add a rule (100 points).
-- Rules: a fixed menu of rules the code can enforce. Starter list drafted for Red to adjust.
+- Rules: a fixed menu of rules the code can enforce. Red confirmed the 4 rules (15 Oct).
 - Points → Lightman's money conversion (soft dependency; disabled if the mod is missing).
 - Warning before the event ends so players spend their points.
 - **Done when**: shop buys work, transfers can't duplicate points, conversion is one-way.
