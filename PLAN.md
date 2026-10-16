@@ -19,7 +19,7 @@ This file is the source of truth for the build. Every session starts by reading 
 | 4 | Timer + penalty + event lives | done | `step4/penalty` | `v0.4-penalty` |
 | 5 | Kogane + shop | done | `step5/kogane-shop` | `v0.5-kogane-shop` |
 | 6 | Client HUD + screens | done | `step6/client` | `v0.6-client` |
-| 7 | Polish + release | in progress (0.10.0 pre-release on GitHub with JJK art, sounds and visible barriers; Red decides about the server) | `step7/release` | `v1.0.0` |
+| 7 | Polish + release (7b: reward shop) | in progress (0.10.0 pre-release on GitHub with JJK art, sounds and visible barriers; Red decides about the server) | `step7/release` | `v1.0.0` |
 
 ## Decided
 
@@ -102,15 +102,33 @@ Goal: a jar the server can run in a real event.
 - Later: publish on CurseForge when the team is happy.
 - **Done when**: one full test event runs start to finish on the real modpack.
 
+### Step 7b — Reward shop (end-of-event rewards)
+Red (16 Oct): leftover points are spent in a shop after the event, e.g. a Special Grade grade-up, pieces of Special Grade weapons and weapon effects. Research by ChatGPT (17 Oct, files in `~/culling-games-assets/research/`); JJC facts checked against the local v51 jar. PhilL approved the plan on 17 Oct: build 1-4 first, then 5-7.
+
+1. **Points survive the event.** At event end the points freeze into a reward balance per player, spendable until the next event starts. Unspent points expire then. No scoring or transfers after the end. Eliminated and offline players can still spend their own balance.
+2. **Kogane's reward shop** (same green-screen design), open after the event. Two reward types, both added by admins:
+   - item: the held stack, like the event shop;
+   - command: a command run as the server for the buyer (`%player%` placeholder), e.g. a grade-up or a weapon with NBT. Lets Red add weapon effects himself.
+3. **Default rewards with verified IDs** (JJC v51):
+   - Special Grade grade-up: `/advancement grant %player% only jujutsucraft:sorcerer_grade_special`. Requires `jujutsucraft:sorcerer_grade_1`; once per player; refused (no charge) if already Special Grade.
+   - The 7 Special Grade tools (tag `cursed_tool_grade0`): `inverted_spear_of_heaven`, `playful_cloud`, `split_soul_katana`, `black_rope`, `supreme_martial_solution` (Kamutoke), `hiten`, `sword_of_extermination`.
+   - Weapon fragments: per-weapon fragment counts stored by the mod against the player's UUID (not physical items, so they can't be forged or traded). Full set redeems the real weapon: Playful Cloud 4, Split Soul Katana 5, Inverted Spear 6 (others configurable). Fragments persist across events.
+4. **Limits**: stock per event, max per player per event, once per player ever. If the inventory is full the reward waits (pending) until there is room; rare rewards never drop on the ground. Every purchase is logged.
+5. **Prices** (starting values, configurable in file and `/cg config`): supplies 1-25, mid 30-60, fragments 50-90, premium 200-240. Estimate: a normal player ends with 20-70 points, a top player 100-250. Tune after the first real event.
+6. **Cash-out**: 5 points = 1 copper coin, max 10 copper per player per event (both configurable). Lightman coin IDs: `lightmanscurrency:coin_copper/iron/gold/emerald/diamond/netherite` (default 10 of one tier = 1 of the next).
+7. **JJK flavour**: show the 8 canon rules (paraphrased) in the rules menu, bought rules continue from 9; Kogane lines from the research in announcements; admin guide suggests colony names (Tokyo No. 1, Tokyo No. 2, Sendai, Sakurajima verified; others marked unverified).
+
+Not covered yet: which weapon effects JJC supports (no answer; Red can add them as command rewards). Prices are estimates until a real event.
+
 ## Full-modpack test server
 - `~/fujiwara-local-server` (outside iCloud on purpose: Desktop/Documents files are iCloud placeholders and very slow to read). Full FTP mirror of the server incl. the map, Forge 47.4.10 installed, port 25567, RCON 25576, offline mode, `server-ip` cleared, our jar in `mods/`.
 - Start: `cd ~/fujiwara-local-server && ./run.sh nogui` (JDK 17 on PATH).
 - 16 Oct: all 96 mods + ours load on the real map; colony/start/stop work; spark median 5.8 ms/tick idle.
 
 ## Open questions (do not block work)
-- Red: final OK on scope; end rewards.
+- Red: final OK on scope. End rewards answered 16 Oct (see step 7b); full reward list and prices still his call.
 - Which JJC entities are "weak targets"? Default: every hostile mob except summons. Extra ids can go in `weakTargetsExtra`.
-- Is JujutsuAlm still on the server? (configs exist, no jar found)
+- Resolved 16 Oct (Red): JujutsuAlm is out of the pack (not ReBalanced, which stays). No Alm handling needed.
 - Resolved 16 Oct: JJC summons carry `OWNER_UUID` (not `OwnableEntity`); handled. The seal drains CE instead of changing the CT, so no "no CT" value is needed.
 
 ## Workflow and checkpoints
