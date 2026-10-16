@@ -96,6 +96,7 @@ Goal: players see what matters without commands.
 Goal: a jar the server can run in a real event.
 - End rewards (if Red wants them).
 - Remaining admin commands, help text, permissions review.
+- Admin guide for Red: `ADMIN_GUIDE.md` (install, colonies, shop, running an event, settings). Done 16 Oct.
 - Performance check with spark on the dev server.
 - Test with the full JJI modpack, then publish the jar as a GitHub release. **We never upload to ServerMiner**: Red downloads the jar and decides whether and when it goes on the server.
 - Later: publish on CurseForge when the team is happy.
