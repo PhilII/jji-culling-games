@@ -20,7 +20,7 @@ This file is the source of truth for the build. Every session starts by reading 
 | 5 | Kogane + shop | done | `step5/kogane-shop` | `v0.5-kogane-shop` |
 | 6 | Client HUD + screens | done | `step6/client` | `v0.6-client` |
 | 7 | Polish + release (7b: reward shop) | in progress (0.12.0 pre-release on GitHub: JJK art, sounds, visible barriers, reward shop; Red decides about the server) | `step7/release` | `v1.0.0` |
-| 8 | Red's rules (20 Oct) | done in 0.13.0 pre-release (all 5 rules, GameTests; open questions below) | `step8/red-rules` | `v0.13.0` |
+| 8 | Red's rules (20 Oct) | done in 0.13.0 pre-release; 0.13.1 holds the penalty timer while offline (all 5 rules, GameTests; open questions below) | `step8/red-rules` | `v0.13.0` |
 
 ## Decided
 
@@ -141,6 +141,9 @@ Open questions for Red:
 - Heal and CE: one purchase per battle in total (current), or one of each?
 - "Every MC day": 20 min of event time (current) or the real sunrise?
 - Should an assist give points too (currently it only ends hunted)?
+
+### 0.13.1 — Offline timer (22 Oct)
+Red wants the Culling Games as a full weekend event (13–14 Dec, #roadmap 1561537194005635095). Until now the penalty timer counted event time, so anyone logged out for more than 19 minutes was sealed the second they came back, with no warning. Fix: the timer stands still while a participant is offline (`EventManager.tick` holds it each running tick; survives restarts because it lives in `lastPointChange`). GameTest `offlineTimerHolds` (fails without the fix); 19/19 pass.
 
 ## Full-modpack test server
 - `~/fujiwara-local-server` (outside iCloud on purpose: Desktop/Documents files are iCloud placeholders and very slow to read). Full FTP mirror of the server incl. the map, Forge 47.4.10 installed, port 25567, RCON 25576, offline mode, `server-ip` cleared, our jar in `mods/`.

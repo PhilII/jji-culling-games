@@ -62,7 +62,7 @@ During the event:
 Players who log in mid-event join automatically (`allowLateJoin`).
 
 ### Penalty
-If a participant's points don't change within the timer (default 19 min; Kogane warns at 5 and 1 min left):
+If a participant's points don't change within the timer (default 19 min of their own online time; Kogane warns at 5 and 1 min left). The timer stands still while a player is logged out, so a weekend event can run overnight without sealing everyone who went to bed:
 - `seal_ct`: their cursed energy is drained to 0 until they score again. The CT itself is never changed, so unique CTs are safe.
 - `lose_life`: they lose an event life.
 

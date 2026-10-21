@@ -59,6 +59,53 @@ public final class PenaltyGameTests {
         h.succeed();
     }
 
+    @GameTest(template = "empty", batch = "offline")
+    public static void offlineTimerHolds(GameTestHelper h) {
+        wrap(h, "offlineTimerHolds", () -> runOfflineTimer(h));
+    }
+
+    /** Weekend events: time logged out never counts towards the penalty, so nobody is sealed the moment they rejoin. */
+    private static void runOfflineTimer(GameTestHelper h) {
+        MinecraftServer server = h.getLevel().getServer();
+        setup(h, "gt_off");
+        ServerPlayer p1 = TestPlayers.create(h, "gt_o1");
+        ServerPlayer p2 = TestPlayers.create(h, "gt_o2");
+        ServerPlayer p2Again = null;
+        try {
+            check(h, EventManager.start(server, PenaltyMode.SEAL_CT) == EventManager.Result.OK, "start");
+            EventState state = EventState.get(server);
+            for (int i = 0; i < 40; i++) {
+                EventManager.tick(server);
+            }
+            check(h, state.ticksSincePointChange(p2.getUUID()) == 40, "online time counts");
+
+            TestPlayers.remove(h, p2);
+            long limit = Penalties.timerLimitTicks(state);
+            for (long i = 0; i < limit + 100; i++) {
+                EventManager.tick(server);
+            }
+            check(h, state.ticksSincePointChange(p1.getUUID()) == limit + 140, "online player's timer keeps running");
+            check(h, state.ticksSincePointChange(p2.getUUID()) == 40, "offline player's timer holds");
+
+            p2Again = TestPlayers.create(h, "gt_o2", p2.getUUID());
+            Penalties.checkTimer(server, state, p2Again);
+            check(h, !state.isSealed(p2.getUUID()), "not sealed on rejoin");
+            for (int i = 0; i < 60; i++) {
+                EventManager.tick(server);
+            }
+            check(h, state.ticksSincePointChange(p2.getUUID()) == 100, "timer runs again after rejoin");
+            check(h, EventState.load(state.save(new CompoundTag())).ticksSincePointChange(p2.getUUID()) == 100,
+                    "held timer survives save/load");
+        } finally {
+            EventManager.stop(server);
+            ColonyStore.get(server).remove("gt_off");
+            TestPlayers.remove(h, p1);
+            if (p2Again != null) {
+                TestPlayers.remove(h, p2Again);
+            }
+        }
+    }
+
     @GameTest(template = "empty", batch = "seal")
     public static void sealAndRestore(GameTestHelper h) {
         wrap(h, "sealAndRestore", () -> runSeal(h));
