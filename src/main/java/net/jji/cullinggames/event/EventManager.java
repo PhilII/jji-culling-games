@@ -37,6 +37,7 @@ public final class EventManager {
             return Result.NO_COLONIES;
         }
         state.begin(penalty, lives, System.currentTimeMillis());
+        Combat.reset();
         List<ServerPlayer> joining = new ArrayList<>();
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             if (isEligible(p)) {
@@ -61,6 +62,7 @@ public final class EventManager {
         }
         int number = state.eventNumber();
         Penalties.onEventEnd(server, state);
+        Tracker.removeAll(server);
         state.end();
         CullingGames.LOGGER.info("Culling Games #{} stopped", number);
         Kogane.broadcast(server, "The Culling Games are over.");
@@ -161,6 +163,7 @@ public final class EventManager {
             return;
         }
         state.tickRunning();
+        Reveals.tick(server, state);
         if (state.endAtTicks() >= 0) {
             long left = state.endAtTicks() - state.runningTicks();
             if (left == 20 * 60) {

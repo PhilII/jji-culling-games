@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 import net.jji.cullinggames.colony.Colony;
 import net.jji.cullinggames.colony.ColonyService;
 import net.jji.cullinggames.colony.ColonyStore;
+import net.jji.cullinggames.compat.JujutsuCraft;
 import net.jji.cullinggames.config.CgConfig;
 import net.jji.cullinggames.event.CanonRules;
 import net.jji.cullinggames.event.EventManager;
@@ -26,6 +27,7 @@ import net.jji.cullinggames.event.KillRecord;
 import net.jji.cullinggames.event.Kogane;
 import net.jji.cullinggames.event.PenaltyMode;
 import net.jji.cullinggames.event.Points;
+import net.jji.cullinggames.event.Recovery;
 import net.jji.cullinggames.event.Shop;
 import net.jji.cullinggames.event.Views;
 import net.jji.cullinggames.network.CgNetwork;
@@ -375,8 +377,9 @@ public final class CgCommands {
 
     private static Stream<String> buyIds(MinecraftServer server) {
         int items = ShopStore.get(server).all().size();
-        return Stream.concat(Arrays.stream(Shop.Service.values()).map(Shop.Service::id),
-                java.util.stream.IntStream.rangeClosed(1, items).mapToObj(Integer::toString));
+        return Stream.of(Arrays.stream(Shop.Service.values()).map(Shop.Service::id),
+                Arrays.stream(Recovery.values()).map(Recovery::id),
+                java.util.stream.IntStream.rangeClosed(1, items).mapToObj(Integer::toString)).flatMap(x -> x);
     }
 
     private static MutableComponent buyLine(String label, int price, String buyId) {
@@ -396,6 +399,12 @@ public final class CgCommands {
         msg.append(buyLine("Leaderboard (rest of event)", Shop.Service.LEADERBOARD.price(), "leaderboard"));
         msg.append(buyLine("Point transfers (rest of event)", Shop.Service.TRANSFER.price(), "transfer"));
         msg.append(buyLine("Kill log (rest of event)", Shop.Service.KILLLOG.price(), "killlog"));
+        if (CgConfig.RECOVERY_ENABLED.get() && c.getSource().getEntity() instanceof ServerPlayer player) {
+            msg.append(buyLine("Full heal (once per battle)", Recovery.HEAL.price(player), "heal"));
+            if (JujutsuCraft.isLoaded()) {
+                msg.append(buyLine("Full cursed energy (once per battle)", Recovery.CE.price(player), "ce"));
+            }
+        }
         List<ShopStore.Entry> items = ShopStore.get(server).all();
         for (int i = 0; i < items.size(); i++) {
             ItemStack s = items.get(i).stack();
@@ -435,6 +444,10 @@ public final class CgCommands {
         ServerPlayer player = c.getSource().getPlayerOrException();
         String what = StringArgumentType.getString(c, "what");
         Shop.Service service = Shop.Service.byId(what);
+        Recovery recovery = Recovery.byId(what);
+        if (recovery != null) {
+            return shopResult(c, Shop.buyRecovery(server(c), player, recovery));
+        }
         if (service != null) {
             return shopResult(c, Shop.buyService(server(c), player, service));
         }
@@ -511,6 +524,7 @@ public final class CgCommands {
         {"/cg points", "your points"},
         {"/cg shop  (or K)", "Kogane's shop"},
         {"/cg buy <item|service>", "buy from the shop"},
+        {"/cg buy heal, /cg buy ce", "full heal or cursed energy for points (once per battle)"},
         {"/cg rules, /cg addrule <rule>", "rules you can add"},
         {"/cg transfer <player> <amount>", "send points (buy transfer first)"},
         {"/cg leaderboard", "standings (buy it first)"},

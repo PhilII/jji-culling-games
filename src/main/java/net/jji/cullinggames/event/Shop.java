@@ -97,6 +97,26 @@ public final class Shop {
         return Result.ok("Unlocked " + service.id() + " for the rest of the event.");
     }
 
+    /** Heal or cursed energy refill (Red, 20 Oct). Paying never resets the timer. */
+    public static Result buyRecovery(MinecraftServer server, ServerPlayer player, Recovery kind) {
+        EventState state = EventState.get(server);
+        Result denied = gate(state, player);
+        if (denied != null) {
+            return denied;
+        }
+        String blocked = kind.blocked(server, state, player);
+        if (!blocked.isEmpty()) {
+            return Result.no(blocked);
+        }
+        int price = kind.price(player);
+        if (!pay(state, player.getUUID(), price)) {
+            return Result.no("That costs " + price + " points. You have " + state.points(player.getUUID()) + ".");
+        }
+        kind.apply(player);
+        Combat.recordRecovery(server, player.getUUID());
+        return Result.ok("Bought " + kind.displayName() + " for " + price + " points.");
+    }
+
     public static Result buyItem(MinecraftServer server, ServerPlayer player, int shopId) {
         EventState state = EventState.get(server);
         Result denied = gate(state, player);

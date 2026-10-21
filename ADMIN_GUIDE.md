@@ -68,6 +68,14 @@ If a participant's points don't change within the timer (default 19 min; Kogane 
 
 At 0 event lives a player becomes a spectator. Event deaths never cost real server lives.
 
+### Red's rules (0.13.0)
+All on by default; every number is a setting (see 5).
+- **Tracker**: every participant carries Kogane's Tracker, a compass pointing to the nearest other participant (updates every 2 s; spins when nobody is in the same dimension). It can't be dropped or kept: it vanishes when tossed or on death, comes back, and is taken at the end.
+- **Kill bonus**: a participant kill gives the killer +500 cursed energy (up to their max) and 45 s of Jujutsu Craft's Zone effect (`jujutsucraft:zone`, the Black Flash state).
+- **Top 3 revealed**: every 10 min of event time Kogane tells everyone which colony the 3 players with the most points are in (points stay hidden).
+- **Hunted**: a participant with 0 points and no kill or assist glows for 30 s once per Minecraft day (20 min of event time). A kill or an assist (damage on a player within 15 s before someone else kills them) ends it; dropping back to 0 points makes them hunted again.
+- **Heal / cursed energy**: in the shop (Services tab, or `/cg buy heal` / `/cg buy ce`) a full heal costs 1 point per missing heart and a full cursed energy refill 1 point per 200 missing, +25% per level of fatigue. During a battle (hit by or hitting a participant in the last 15 s) one purchase per battle; outside battle a 10 s wait.
+
 ### When it ends
 Every seal is lifted, spectators get their old game mode back, and participants are sent to world spawn (`teleportToSpawnOnEnd`). The event and kill log survive server restarts at any point.
 
@@ -102,6 +110,16 @@ Change in game (saved to the file right away):
 | `rewardShopOpen` | true | reward shop open after the event |
 | `maxFragmentsPerEvent` | 2 | weapon fragments per player per event |
 | `specialGradePrice` / `fragmentPrice` | 220 / 60 | prices of the default rewards (until set with `/cg reward set`) |
+| `trackerCompass` / `trackerUpdateSeconds` | true / 2 | tracker compass on/off, seconds between updates |
+| `killBonusCe` / `killBonusCeOverMax` | 500 / false | cursed energy per kill (0 = off); allow going above max |
+| `killZoneSeconds` / `killZoneLevel` / `killZoneEffect` | 45 / 1 / `jujutsucraft:zone` | Zone after a kill (0 s = off) |
+| `killBonusWeakKills` | false | mob kills also give the CE and Zone bonus |
+| `revealTopCount` / `revealIntervalMinutes` | 3 / 10 | top players whose colony is announced, how often (0 = off) |
+| `huntedEnabled` / `huntedGlowSeconds` / `huntedIntervalMinutes` | true / 30 / 20 | hunted glow, its length, how often |
+| `assistSeconds` | 15 | damage this recent before a kill counts as an assist |
+| `recoveryEnabled` | true | heal and CE refill in the shop |
+| `healPointsPerHeart` / `cePerPoint` / `fatigueCostPercent` | 1 / 200 / 25 | recovery prices |
+| `battleSeconds` / `recoveriesPerBattle` / `recoveryCooldownSeconds` | 15 / 1 / 10 | what a battle is, purchases per battle, wait outside battle |
 
 ## 6. Reward shop (after the event)
 When an event ends, every participant keeps the points they had left. Until the next event starts, they can spend them in **Kogane's reward shop**: press **K**, or type `/cg rewards`. Starting the next event wipes leftover points.
