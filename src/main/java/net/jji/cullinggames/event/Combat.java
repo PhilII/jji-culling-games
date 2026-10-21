@@ -10,9 +10,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -137,6 +139,56 @@ public final class Combat {
                 }
             });
         }
+    }
+
+    /**
+     * Logging out mid-battle would dodge a death, and with the timer held while offline it would cost nothing.
+     * The player dies where they stand, credited to the last participant who hit them, so points, lives, the
+     * kill log and the kill bonus all follow the normal death path. {@code die} skips damage, so Infinity and
+     * armour can't block it.
+     */
+    @SubscribeEvent
+    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player && player.getServer() != null) {
+            combatLog(player.getServer(), player);
+        }
+    }
+
+    /** Returns true if the player was killed for leaving a battle. Package-visible for tests. */
+    static boolean combatLog(MinecraftServer server, ServerPlayer player) {
+        UUID id = player.getUUID();
+        EventState state = EventState.get(server);
+        if (!CgConfig.COMBAT_LOG_KILLS.get() || !player.isAlive() || state.phase() != EventPhase.RUNNING
+                || !state.isParticipant(id) || state.isEliminated(id) || !inBattle(server, id)) {
+            return false;
+        }
+        ServerPlayer attacker = lastAttacker(server, state, id);
+        DamageSource source = attacker != null
+                ? player.damageSources().playerAttack(attacker)
+                : player.damageSources().generic();
+        Kogane.broadcast(server, player.getGameProfile().getName() + " fled a battle and paid with a life.");
+        player.setHealth(0);
+        player.die(source);
+        return true;
+    }
+
+    /** The online participant who hit this player most recently within the battle window, or null. */
+    private static ServerPlayer lastAttacker(MinecraftServer server, EventState state, UUID victim) {
+        Map<UUID, Long> hits = HITS.get(victim);
+        if (hits == null) {
+            return null;
+        }
+        long since = server.getTickCount() - 20L * CgConfig.BATTLE_SECONDS.get();
+        ServerPlayer best = null;
+        long bestTick = Long.MIN_VALUE;
+        for (Map.Entry<UUID, Long> e : hits.entrySet()) {
+            ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
+            if (e.getValue() >= since && e.getValue() > bestTick && p != null && state.isParticipant(p.getUUID())) {
+                best = p;
+                bestTick = e.getValue();
+            }
+        }
+        return best;
     }
 
     /** Cursed energy (capped at max unless killBonusCeOverMax) and Jujutsu Craft's Zone for the killer. */
