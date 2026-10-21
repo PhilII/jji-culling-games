@@ -54,6 +54,7 @@ public final class CgConfig {
     public static final ForgeConfigSpec.IntValue CE_PER_POINT;
     public static final ForgeConfigSpec.IntValue FATIGUE_COST_PERCENT;
     public static final ForgeConfigSpec.IntValue BATTLE_SECONDS;
+    public static final ForgeConfigSpec.BooleanValue COMBAT_LOG_KILLS;
     public static final ForgeConfigSpec.IntValue RECOVERIES_PER_BATTLE;
     public static final ForgeConfigSpec.IntValue RECOVERY_COOLDOWN_SECONDS;
 
@@ -182,6 +183,8 @@ public final class CgConfig {
                 .defineInRange("fatigueCostPercent", 25, 0, 10000);
         BATTLE_SECONDS = b.comment("A player is in battle while they hit or were hit by another participant within this many seconds.")
                 .defineInRange("battleSeconds", 15, 1, 600);
+        COMBAT_LOG_KILLS = b.comment("A participant who logs out during a battle dies on the spot; the last player who hit them gets the kill.")
+                .define("combatLogKills", true);
         RECOVERIES_PER_BATTLE = b.comment("Heals plus refills one player may buy during one battle.")
                 .defineInRange("recoveriesPerBattle", 1, 0, 100);
         RECOVERY_COOLDOWN_SECONDS = b.comment("Seconds between recoveries outside battle. 0 = no wait.")

@@ -115,6 +115,49 @@ public final class RedRulesGameTests {
         }
     }
 
+    @GameTest(template = "empty", batch = "combatlog")
+    public static void combatLogKills(GameTestHelper h) {
+        wrap(h, "combatLogKills", () -> runCombatLog(h));
+    }
+
+    /** Logging out mid-battle is a death credited to the last attacker; logging out outside battle is free. */
+    private static void runCombatLog(GameTestHelper h) {
+        MinecraftServer server = h.getLevel().getServer();
+        EventManager.stop(server);
+        colony(h, "gt_cl", 0);
+        ServerPlayer p1 = TestPlayers.create(h, "gt_cl1");
+        ServerPlayer p2 = TestPlayers.create(h, "gt_cl2");
+        ServerPlayer p3 = TestPlayers.create(h, "gt_cl3");
+        try {
+            check(h, EventManager.start(server, PenaltyMode.SEAL_CT, 3) == EventManager.Result.OK, "start");
+            EventState state = EventState.get(server);
+            Points.set(server, p2.getUUID(), 20);
+
+            // Outside battle: logging out costs nothing.
+            check(h, !Combat.combatLog(server, p3), "no battle, no penalty");
+            check(h, state.lives(p3.getUUID()) == 3 && p3.isAlive(), "p3 keeps lives");
+
+            // In battle: real logout (PlayerList.remove fires PlayerLoggedOutEvent).
+            Combat.recordHit(server, p1, p2);
+            TestPlayers.remove(h, p2);
+            check(h, state.lives(p2.getUUID()) == 2, "combat logger loses a life");
+            check(h, state.kills().size() == 1 && state.kills().get(0).killerId().equals(p1.getUUID())
+                    && state.kills().get(0).victimId().equals(p2.getUUID()), "kill logged for the last attacker");
+            check(h, state.points(p1.getUUID()) == 10, "attacker gets kill points (5 + 5 stolen)");
+            check(h, state.points(p2.getUUID()) == 15, "logger loses the stolen points");
+
+            // Switched off in config: no penalty.
+            CgConfig.COMBAT_LOG_KILLS.set(false);
+            Combat.recordHit(server, p1, p3);
+            check(h, !Combat.combatLog(server, p3), "config off, no penalty");
+        } finally {
+            CgConfig.COMBAT_LOG_KILLS.set(true);
+            EventManager.stop(server);
+            ColonyStore.get(server).remove("gt_cl");
+            TestPlayers.remove(h, p1, p3);
+        }
+    }
+
     @GameTest(template = "empty", batch = "killbonus")
     public static void killBonusAndAssist(GameTestHelper h) {
         wrap(h, "killBonusAndAssist", () -> runKillBonus(h));

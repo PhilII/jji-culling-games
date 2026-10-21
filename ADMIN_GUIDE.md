@@ -66,6 +66,8 @@ If a participant's points don't change within the timer (default 19 min of their
 - `seal_ct`: their cursed energy is drained to 0 until they score again. The CT itself is never changed, so unique CTs are safe.
 - `lose_life`: they lose an event life.
 
+Logging out during a battle (hit by or hitting a participant in the last 15 s) counts as a death: the player dies where they stand and the last participant who hit them gets the kill, points and kill bonus (`combatLogKills`, on by default). Logging out outside battle is free, and the timer stands still while offline.
+
 At 0 event lives a player becomes a spectator. Event deaths never cost real server lives.
 
 ### Red's rules (0.13.0)
