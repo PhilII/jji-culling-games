@@ -33,7 +33,15 @@ final class ConfigCommand {
                 CgConfig.LEADERBOARD_PRICE, CgConfig.TRANSFER_PRICE, CgConfig.KILLLOG_PRICE,
                 CgConfig.LONGER_TIMER_MINUTES, CgConfig.MONEY_ITEM, CgConfig.POINTS_PER_COIN,
                 CgConfig.MAX_COINS_PER_EVENT, CgConfig.REWARD_SHOP_OPEN, CgConfig.MAX_FRAGMENTS_PER_EVENT,
-                CgConfig.SPECIAL_GRADE_PRICE, CgConfig.FRAGMENT_PRICE}) {
+                CgConfig.SPECIAL_GRADE_PRICE, CgConfig.FRAGMENT_PRICE,
+                CgConfig.TRACKER_COMPASS, CgConfig.TRACKER_UPDATE_SECONDS,
+                CgConfig.KILL_BONUS_CE, CgConfig.KILL_BONUS_CE_OVER_MAX, CgConfig.KILL_ZONE_SECONDS,
+                CgConfig.KILL_ZONE_LEVEL, CgConfig.KILL_ZONE_EFFECT, CgConfig.KILL_BONUS_WEAK_KILLS,
+                CgConfig.REVEAL_TOP_COUNT, CgConfig.REVEAL_INTERVAL_MINUTES,
+                CgConfig.HUNTED_ENABLED, CgConfig.HUNTED_GLOW_SECONDS, CgConfig.HUNTED_INTERVAL_MINUTES,
+                CgConfig.ASSIST_SECONDS, CgConfig.RECOVERY_ENABLED, CgConfig.HEAL_POINTS_PER_HEART,
+                CgConfig.CE_PER_POINT, CgConfig.FATIGUE_COST_PERCENT, CgConfig.BATTLE_SECONDS,
+                CgConfig.RECOVERIES_PER_BATTLE, CgConfig.RECOVERY_COOLDOWN_SECONDS}) {
             m.put(v.getPath().get(v.getPath().size() - 1), v);
         }
         return m;

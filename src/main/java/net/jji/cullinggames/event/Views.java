@@ -3,6 +3,7 @@ package net.jji.cullinggames.event;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import net.jji.cullinggames.compat.JujutsuCraft;
 import net.jji.cullinggames.config.CgConfig;
 import net.jji.cullinggames.network.HudSyncPacket;
 import net.jji.cullinggames.network.ShopActionPacket;
@@ -53,6 +54,16 @@ public final class Views {
         for (Shop.Service s : Shop.Service.values()) {
             services.add(new ShopSyncPacket.ServiceOffer(s.id(), s.price(), Shop.hasAccess(state, id, s)));
         }
+        // Recovery rows: "owned" means not available now; price 0 then means nothing is missing.
+        if (CgConfig.RECOVERY_ENABLED.get() && state.phase() == EventPhase.RUNNING) {
+            for (Recovery r : Recovery.values()) {
+                if (r == Recovery.CE && !JujutsuCraft.isLoaded()) {
+                    continue;
+                }
+                services.add(new ShopSyncPacket.ServiceOffer(r.id(), r.price(player),
+                        !r.blocked(server, state, player).isEmpty()));
+            }
+        }
         List<ShopSyncPacket.RuleOffer> rules = new ArrayList<>();
         for (EventRule r : EventRule.values()) {
             rules.add(new ShopSyncPacket.RuleOffer(r.id(), r.description(), state.hasRule(r.id())));
@@ -91,8 +102,11 @@ public final class Views {
         switch (action.action()) {
             case BUY -> {
                 Shop.Service service = Shop.Service.byId(action.id());
+                Recovery recovery = Recovery.byId(action.id());
                 Shop.Result result;
-                if (service != null) {
+                if (recovery != null) {
+                    result = Shop.buyRecovery(server, player, recovery);
+                } else if (service != null) {
                     result = Shop.buyService(server, player, service);
                 } else {
                     try {

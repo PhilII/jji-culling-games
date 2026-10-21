@@ -20,6 +20,7 @@ This file is the source of truth for the build. Every session starts by reading 
 | 5 | Kogane + shop | done | `step5/kogane-shop` | `v0.5-kogane-shop` |
 | 6 | Client HUD + screens | done | `step6/client` | `v0.6-client` |
 | 7 | Polish + release (7b: reward shop) | in progress (0.12.0 pre-release on GitHub: JJK art, sounds, visible barriers, reward shop; Red decides about the server) | `step7/release` | `v1.0.0` |
+| 8 | Red's rules (20 Oct) | done in 0.13.0 pre-release (all 5 rules, GameTests; open questions below) | `step8/red-rules` | `v0.13.0` |
 
 ## Decided
 
@@ -121,6 +122,25 @@ Red (16 Oct): leftover points are spent in a shop after the event, e.g. a Specia
 **Status 17 Oct:** 5-7 built in 0.12.0 (default prices follow `specialGradePrice`/`fragmentPrice`; cash-out 5 pts/coin, max 10 coins/player/event, also in the reward shop's Coins tab; original 8 rules in `/cg rules` and the Rules tab; Kogane lines in announcements; colony names in the admin guide). Fixed: popups were hidden behind a full chat. 1-4 built in 0.11.0 (reward shop, defaults, fragments, limits, pending delivery; GameTest `rewardShop`; Special Grade promotion checked in game: JJC sets PlayerLevel 20). Next: 5-7.
 
 Not covered yet: which weapon effects JJC supports (no answer; Red can add them as command rewards). Prices are estimates until a real event.
+
+### Step 8 — Red's rules (20 Oct, #general)
+Red's [NEW RULE] posts (Discord 1561974398431264830 and the next five messages). Every value is in the config file and `/cg config`.
+1. **Tracker compass** to the closest player: vanilla lodestone compass that the server re-points every 2 s at the nearest other participant in the same dimension (spins if none). Can't be dropped or kept.
+2. **Kill = +500 CE and 45 s of zone**: "zone" is Jujutsu Craft's `jujutsucraft:zone` effect (the Black Flash state). CE stops at the killer's max by default (`killBonusCeOverMax`). Player kills only by default.
+3. **Top 3 by points**: their colony (district) is announced to everyone every 10 min of event time. Points stay hidden.
+4. **Hunted**: 0 points and no kill or assist → Glowing for 30 s every 20 min of event time (one MC day; event time so it works with the daylight cycle off and pauses). Assist = hit the victim within 15 s before someone else killed them. Dropping back to 0 makes you hunted again.
+5. **Heal / CE for points**: Services tab and `/cg buy heal|ce`. Full restore; price = 1 pt per missing heart or 1 pt per 200 missing CE, +25% per fatigue level (`jujutsucraft:fatigue`). One purchase per battle (participant hit within 15 s), 10 s wait outside battle. Sealed players can't buy CE.
+
+Not in scope: BigMann's shrinking-barrier rule from the same thread (not part of Red's set).
+
+**Status 22 Oct:** built in 0.13.0, GameTests `trackerCompass`, `killBonusAndAssist`, `revealTopAndHunted`, `healAndCursedEnergy` pass with JJC v51 (18/18 total). Not yet tested with real players (compass feel, Zone in combat).
+
+Open questions for Red:
+- Should +500 CE go above max? A fresh JJC player has max CE 30, so capped it is a refill.
+- Do mob kills also give the CE + Zone bonus, or only player kills (current)?
+- Heal and CE: one purchase per battle in total (current), or one of each?
+- "Every MC day": 20 min of event time (current) or the real sunrise?
+- Should an assist give points too (currently it only ends hunted)?
 
 ## Full-modpack test server
 - `~/fujiwara-local-server` (outside iCloud on purpose: Desktop/Documents files are iCloud placeholders and very slow to read). Full FTP mirror of the server incl. the map, Forge 47.4.10 installed, port 25567, RCON 25576, offline mode, `server-ip` cleared, our jar in `mods/`.

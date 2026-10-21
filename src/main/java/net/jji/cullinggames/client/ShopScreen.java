@@ -146,8 +146,14 @@ public final class ShopScreen extends Screen {
             switch (tab) {
                 case SERVICES -> {
                     ShopSyncPacket.ServiceOffer s = data.services().get(i);
-                    b = new LcdButton(bx, y + 2, 56, 14, Component.literal(s.owned() ? "Owned" : s.price() + " pts"),
+                    boolean recovery = isRecovery(s.id());
+                    String label = !s.owned() ? s.price() + " pts" : !recovery ? "Owned" : s.price() == 0 ? "Full" : "Not now";
+                    b = new LcdButton(bx, y + 2, 56, 14, Component.literal(label),
                             btn -> send(ShopActionPacket.Action.BUY, s.id()));
+                    if (recovery) {
+                        b.setTooltip(Tooltip.create(Component.literal(s.id().equals("heal") ? "Full heal" : "Full cursed energy")
+                                .append(". Price grows with what is missing and your fatigue. Once per battle.")));
+                    }
                     b.active = open && !s.owned() && data.points() >= s.price();
                 }
                 case RULES -> {
@@ -302,8 +308,14 @@ public final class ShopScreen extends Screen {
         return false;
     }
 
+    private static boolean isRecovery(String id) {
+        return id.equals("heal") || id.equals("ce");
+    }
+
     private static String serviceName(String id) {
         return switch (id) {
+            case "heal" -> "Heal";
+            case "ce" -> "Cursed energy";
             case "killlog" -> "Kill log";
             case "transfer" -> "Point transfers";
             default -> capitalize(id);

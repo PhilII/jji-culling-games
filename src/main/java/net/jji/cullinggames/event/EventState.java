@@ -53,6 +53,8 @@ public final class EventState extends SavedData {
     private final Map<UUID, Set<String>> unlocks = new HashMap<>();
     /** Rules added this event (EventRule names). */
     private final Set<String> rules = new LinkedHashSet<>();
+    /** Participants who got a kill or an assist since they last had points, so they are not hunted at 0 points. */
+    private final Set<UUID> huntCleared = new HashSet<>();
     /** runningTicks at which the event ends by itself, or -1. */
     private long endAtTicks = -1;
 
@@ -137,6 +139,9 @@ public final class EventState extends SavedData {
         for (Tag t : tag.getList("rules", Tag.TAG_STRING)) {
             s.rules.add(t.getAsString());
         }
+        for (Tag t : tag.getList("huntCleared", Tag.TAG_INT_ARRAY)) {
+            s.huntCleared.add(NbtUtils.loadUUID(t));
+        }
         s.endAtTicks = tag.contains("endAtTicks") ? tag.getLong("endAtTicks") : -1;
         for (Tag t : tag.getList("kills", Tag.TAG_COMPOUND)) {
             KillRecord k = KillRecord.load((CompoundTag) t);
@@ -209,6 +214,11 @@ public final class EventState extends SavedData {
         ListTag ruleList = new ListTag();
         rules.forEach(r -> ruleList.add(StringTag.valueOf(r)));
         tag.put("rules", ruleList);
+        ListTag cleared = new ListTag();
+        for (UUID id : huntCleared) {
+            cleared.add(NbtUtils.createUUID(id));
+        }
+        tag.put("huntCleared", cleared);
         tag.putLong("endAtTicks", endAtTicks);
         return tag;
     }
@@ -241,6 +251,7 @@ public final class EventState extends SavedData {
         this.gameModeBefore.clear();
         this.unlocks.clear();
         this.rules.clear();
+        this.huntCleared.clear();
         this.endAtTicks = -1;
         setDirty();
     }
@@ -304,6 +315,9 @@ public final class EventState extends SavedData {
             return false;
         }
         points.put(id, value);
+        if (value == 0) {
+            huntCleared.remove(id);
+        }
         boolean gained = value > old;
         if (gained) {
             lastPointChange.put(id, runningTicks);
@@ -326,6 +340,13 @@ public final class EventState extends SavedData {
             setDirty();
         }
         return added;
+    }
+
+    /** A kill or an assist: the player is no longer hunted, even at 0 points, until they drop to 0 again. */
+    void clearHunt(UUID id) {
+        if (huntCleared.add(id)) {
+            setDirty();
+        }
     }
 
     void setEndAt(long ticks) {
@@ -397,6 +418,11 @@ public final class EventState extends SavedData {
     }
 
     // --- reads ---
+
+    /** At 0 points with no kill or assist since: glows now and then (Red's hunted rule). */
+    public boolean isHunted(UUID id) {
+        return isParticipant(id) && !isEliminated(id) && points(id) == 0 && !huntCleared.contains(id);
+    }
 
     public boolean hasUnlocked(UUID id, String service) {
         return unlocks.getOrDefault(id, Set.of()).contains(service);

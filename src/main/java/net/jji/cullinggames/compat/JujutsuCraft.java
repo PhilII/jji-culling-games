@@ -4,10 +4,15 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.UUID;
 import net.jji.cullinggames.CullingGames;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * Soft link to Jujutsu Craft's player variables (capability "jujutsucraft:player_variables").
@@ -90,6 +95,19 @@ public final class JujutsuCraft {
             CullingGames.LOGGER.error("Could not set cursed energy for {}", player.getGameProfile().getName(), e);
             return false;
         }
+    }
+
+    /** Fatigue as a level (0 = none, 1 = Fatigue I...), from Jujutsu Craft's "jujutsucraft:fatigue" effect. */
+    public static int fatigueLevel(LivingEntity entity) {
+        MobEffect fatigue = effect("jujutsucraft:fatigue");
+        MobEffectInstance instance = fatigue == null ? null : entity.getEffect(fatigue);
+        return instance == null ? 0 : instance.getAmplifier() + 1;
+    }
+
+    /** A registered effect by id (any mod), or null if there is none. Plain registry lookup, no reflection. */
+    public static MobEffect effect(String id) {
+        ResourceLocation key = ResourceLocation.tryParse(id);
+        return key == null ? null : ForgeRegistries.MOB_EFFECTS.getValue(key);
     }
 
     private static double getDouble(ServerPlayer player, Field field) {

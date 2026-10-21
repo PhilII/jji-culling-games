@@ -35,6 +35,27 @@ public final class CgConfig {
     public static final ForgeConfigSpec.IntValue MAX_FRAGMENTS_PER_EVENT;
     public static final ForgeConfigSpec.IntValue SPECIAL_GRADE_PRICE;
     public static final ForgeConfigSpec.IntValue FRAGMENT_PRICE;
+    public static final ForgeConfigSpec.BooleanValue TRACKER_COMPASS;
+    public static final ForgeConfigSpec.IntValue TRACKER_UPDATE_SECONDS;
+    public static final ForgeConfigSpec.IntValue KILL_BONUS_CE;
+    public static final ForgeConfigSpec.BooleanValue KILL_BONUS_CE_OVER_MAX;
+    public static final ForgeConfigSpec.IntValue KILL_ZONE_SECONDS;
+    public static final ForgeConfigSpec.IntValue KILL_ZONE_LEVEL;
+    public static final ForgeConfigSpec.ConfigValue<String> KILL_ZONE_EFFECT;
+    public static final ForgeConfigSpec.BooleanValue KILL_BONUS_WEAK_KILLS;
+    public static final ForgeConfigSpec.IntValue REVEAL_TOP_COUNT;
+    public static final ForgeConfigSpec.IntValue REVEAL_INTERVAL_MINUTES;
+    public static final ForgeConfigSpec.BooleanValue HUNTED_ENABLED;
+    public static final ForgeConfigSpec.IntValue HUNTED_GLOW_SECONDS;
+    public static final ForgeConfigSpec.IntValue HUNTED_INTERVAL_MINUTES;
+    public static final ForgeConfigSpec.IntValue ASSIST_SECONDS;
+    public static final ForgeConfigSpec.BooleanValue RECOVERY_ENABLED;
+    public static final ForgeConfigSpec.IntValue HEAL_POINTS_PER_HEART;
+    public static final ForgeConfigSpec.IntValue CE_PER_POINT;
+    public static final ForgeConfigSpec.IntValue FATIGUE_COST_PERCENT;
+    public static final ForgeConfigSpec.IntValue BATTLE_SECONDS;
+    public static final ForgeConfigSpec.IntValue RECOVERIES_PER_BATTLE;
+    public static final ForgeConfigSpec.IntValue RECOVERY_COOLDOWN_SECONDS;
 
     static {
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
@@ -107,6 +128,64 @@ public final class CgConfig {
                 .defineInRange("specialGradePrice", 220, 0, 1000000);
         FRAGMENT_PRICE = b.comment("Price of each default weapon fragment (unless changed with /cg reward set).")
                 .defineInRange("fragmentPrice", 60, 0, 1000000);
+        b.pop();
+
+        // Red's rules from 20 Oct 2026 (0.13.0).
+        b.push("tracker");
+        TRACKER_COMPASS = b.comment("Every participant gets Kogane's tracker: a compass that points to the nearest other participant.")
+                .define("trackerCompass", true);
+        TRACKER_UPDATE_SECONDS = b.comment("Seconds between tracker updates.")
+                .defineInRange("trackerUpdateSeconds", 2, 1, 60);
+        b.pop();
+
+        b.push("killBonus");
+        KILL_BONUS_CE = b.comment("Cursed energy the killer gets for killing another participant. 0 = off.")
+                .defineInRange("killBonusCe", 500, 0, 1000000);
+        KILL_BONUS_CE_OVER_MAX = b.comment("The cursed energy bonus may go above the killer's max. If false it stops at the max.")
+                .define("killBonusCeOverMax", false);
+        KILL_ZONE_SECONDS = b.comment("Seconds of the zone effect the killer gets. 0 = off.")
+                .defineInRange("killZoneSeconds", 45, 0, 3600);
+        KILL_ZONE_LEVEL = b.comment("Level of the zone effect (1 = level I).")
+                .defineInRange("killZoneLevel", 1, 1, 10);
+        KILL_ZONE_EFFECT = b.comment("Effect given as \"zone\". Jujutsu Craft's Zone (the Black Flash state) is jujutsucraft:zone.")
+                .define("killZoneEffect", "jujutsucraft:zone");
+        KILL_BONUS_WEAK_KILLS = b.comment("Weak-target kills (mobs) also give the cursed energy and zone bonus.")
+                .define("killBonusWeakKills", false);
+        b.pop();
+
+        b.push("reveal");
+        REVEAL_TOP_COUNT = b.comment("How many top players by points have their colony announced to everyone.")
+                .defineInRange("revealTopCount", 3, 1, 50);
+        REVEAL_INTERVAL_MINUTES = b.comment("Minutes of event time between announcements. 0 = off.")
+                .defineInRange("revealIntervalMinutes", 10, 0, 24 * 60);
+        b.pop();
+
+        b.push("hunted");
+        HUNTED_ENABLED = b.comment("Participants with 0 points are hunted: they glow until they get a kill or an assist.")
+                .define("huntedEnabled", true);
+        HUNTED_GLOW_SECONDS = b.comment("Seconds a hunted player glows each time.")
+                .defineInRange("huntedGlowSeconds", 30, 1, 3600);
+        HUNTED_INTERVAL_MINUTES = b.comment("Minutes of event time between glows. 20 = one Minecraft day.")
+                .defineInRange("huntedIntervalMinutes", 20, 1, 24 * 60);
+        ASSIST_SECONDS = b.comment("Damage to a participant this many seconds before someone else kills them counts as an assist.")
+                .defineInRange("assistSeconds", 15, 1, 600);
+        b.pop();
+
+        b.push("recovery");
+        RECOVERY_ENABLED = b.comment("Participants can buy a heal or a cursed energy refill with points in the event shop.")
+                .define("recoveryEnabled", true);
+        HEAL_POINTS_PER_HEART = b.comment("Points per missing heart (2 health) for a full heal.")
+                .defineInRange("healPointsPerHeart", 1, 0, 100000);
+        CE_PER_POINT = b.comment("Missing cursed energy refilled per point for a full refill.")
+                .defineInRange("cePerPoint", 200, 1, 1000000);
+        FATIGUE_COST_PERCENT = b.comment("Extra cost in percent per level of Jujutsu Craft fatigue.")
+                .defineInRange("fatigueCostPercent", 25, 0, 10000);
+        BATTLE_SECONDS = b.comment("A player is in battle while they hit or were hit by another participant within this many seconds.")
+                .defineInRange("battleSeconds", 15, 1, 600);
+        RECOVERIES_PER_BATTLE = b.comment("Heals plus refills one player may buy during one battle.")
+                .defineInRange("recoveriesPerBattle", 1, 0, 100);
+        RECOVERY_COOLDOWN_SECONDS = b.comment("Seconds between recoveries outside battle. 0 = no wait.")
+                .defineInRange("recoveryCooldownSeconds", 10, 0, 3600);
         b.pop();
 
         SPEC = b.build();
