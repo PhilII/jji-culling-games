@@ -354,6 +354,14 @@ public final class EventState extends SavedData {
         setDirty();
     }
 
+    /**
+     * Holds an offline participant's timer for one running tick, so time spent logged out (overnight in a
+     * weekend event) never counts towards the penalty.
+     */
+    void holdTimer(UUID id) {
+        lastPointChange.computeIfPresent(id, (k, v) -> v + 1);
+    }
+
     /** Restarts the player's timer without a point change (after a life-loss penalty). */
     void resetTimer(UUID id) {
         lastPointChange.put(id, runningTicks);

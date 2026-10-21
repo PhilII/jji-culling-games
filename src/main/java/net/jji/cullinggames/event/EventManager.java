@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import net.jji.cullinggames.CullingGames;
 import net.jji.cullinggames.colony.Colony;
 import net.jji.cullinggames.colony.ColonyService;
@@ -163,6 +164,11 @@ public final class EventManager {
             return;
         }
         state.tickRunning();
+        for (UUID id : state.participants()) {
+            if (server.getPlayerList().getPlayer(id) == null) {
+                state.holdTimer(id);
+            }
+        }
         Reveals.tick(server, state);
         if (state.endAtTicks() >= 0) {
             long left = state.endAtTicks() - state.runningTicks();
